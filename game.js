@@ -10,7 +10,7 @@ class DotsAndBoxesGame {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.dotRadius = 1.6; // 5 times smaller than 8
-        this.lineWidth = 1; // Also scaled down proportionally
+        this.lineWidth = 2; // Doubled from 1 for better visibility
         this.selectedDot = null;
         this.pulsatingLines = [];
 
