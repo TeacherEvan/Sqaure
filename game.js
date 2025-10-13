@@ -67,11 +67,117 @@ class DotsAndBoxesGame {
     }
 
     setupEventListeners() {
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
         window.addEventListener('resize', () => {
             this.setupCanvas();
             this.draw();
         });
+    }
+
+    getNearestDot(x, y) {
+        const col = Math.round((x - this.offsetX) / this.cellSize);
+        const row = Math.round((y - this.offsetY) / this.cellSize);
+
+        if (row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize) {
+            const dotX = this.offsetX + col * this.cellSize;
+            const dotY = this.offsetY + row * this.cellSize;
+            const distance = Math.sqrt(Math.pow(x - dotX, 2) + Math.pow(y - dotY, 2));
+
+            if (distance <= this.cellSize * 0.3) {
+                return { row, col };
+            }
+        }
+        return null;
+    }
+
+    handleMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const dot = this.getNearestDot(x, y);
+        if (dot && this.selectedDot && this.areAdjacent(this.selectedDot, dot)) {
+            this.canvas.style.cursor = 'pointer';
+        } else if (dot) {
+            this.canvas.style.cursor = 'pointer';
+        } else {
+            this.canvas.style.cursor = 'default';
+        }
+    }
+
+    areAdjacent(dot1, dot2) {
+        const rowDiff = Math.abs(dot1.row - dot2.row);
+        const colDiff = Math.abs(dot1.col - dot2.col);
+        return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+    }
+
+    getLineKey(dot1, dot2) {
+        const [first, second] = [dot1, dot2].sort((a, b) =>
+            a.row === b.row ? a.col - b.col : a.row - b.row
+        );
+        return `${first.row},${first.col}-${second.row},${second.col}`;
+    }
+
+    checkForSquares(lineKey) {
+        const [start, end] = lineKey.split('-').map(s => {
+            const [row, col] = s.split(',').map(Number);
+            return { row, col };
+        });
+
+        const completedSquares = [];
+        const isHorizontal = start.row === end.row;
+
+        if (isHorizontal) {
+            // Check square above
+            if (start.row > 0) {
+                const squareKey = `${start.row - 1},${Math.min(start.col, end.col)}`;
+                if (this.isSquareComplete(start.row - 1, Math.min(start.col, end.col))) {
+                    this.squares[squareKey] = this.currentPlayer;
+                    completedSquares.push(squareKey);
+                }
+            }
+            // Check square below
+            if (start.row < this.gridSize - 1) {
+                const squareKey = `${start.row},${Math.min(start.col, end.col)}`;
+                if (this.isSquareComplete(start.row, Math.min(start.col, end.col))) {
+                    this.squares[squareKey] = this.currentPlayer;
+                    completedSquares.push(squareKey);
+                }
+            }
+        } else {
+            // Check square to the left
+            if (start.col > 0) {
+                const squareKey = `${Math.min(start.row, end.row)},${start.col - 1}`;
+                if (this.isSquareComplete(Math.min(start.row, end.row), start.col - 1)) {
+                    this.squares[squareKey] = this.currentPlayer;
+                    completedSquares.push(squareKey);
+                }
+            }
+            // Check square to the right
+            if (start.col < this.gridSize - 1) {
+                const squareKey = `${Math.min(start.row, end.row)},${start.col}`;
+                if (this.isSquareComplete(Math.min(start.row, end.row), start.col)) {
+                    this.squares[squareKey] = this.currentPlayer;
+                    completedSquares.push(squareKey);
+                }
+            }
+        }
+
+        return completedSquares;
+    }
+
+    isSquareComplete(row, col) {
+        const top = this.getLineKey({ row, col }, { row, col: col + 1 });
+        const bottom = this.getLineKey({ row: row + 1, col }, { row: row + 1, col: col + 1 });
+        const left = this.getLineKey({ row, col }, { row: row + 1, col });
+        const right = this.getLineKey({ row, col: col + 1 }, { row: row + 1, col: col + 1 });
+
+        return this.lines.has(top) && this.lines.has(bottom) &&
+            this.lines.has(left) && this.lines.has(right) &&
+            !this.squares[`${row},${col}`];
+    }
+
+    isAdjacent(dot1, dot2) {
+        return this.areAdjacent(dot1, dot2);
     }
 
     handleClick(e) {
@@ -103,6 +209,10 @@ class DotsAndBoxesGame {
                         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
                     } else {
                         this.scores[this.currentPlayer] += completedSquares.length;
+                        // Trigger animations for completed squares
+                        completedSquares.forEach(squareKey => {
+                            this.triggerSquareAnimation(squareKey);
+                        });
                     }
 
                     this.updateUI();
@@ -202,7 +312,7 @@ class DotsAndBoxesGame {
                     this.lines.add(lineKey);
                     this.pulsatingLines.push({ lineKey, timestamp: Date.now() });
 
-                    const completedSquares = this.checkForSquares(this.selectedDot, dot);
+                    const completedSquares = this.checkForSquares(lineKey);
 
                     if (completedSquares.length > 0) {
                         // Trigger animations for completed squares
@@ -210,7 +320,7 @@ class DotsAndBoxesGame {
                             this.triggerSquareAnimation(squareKey);
                         });
 
-                        this.scores[this.currentPlayer - 1] += completedSquares.length;
+                        this.scores[this.currentPlayer] += completedSquares.length;
                     } else {
                         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
                     }
@@ -510,6 +620,12 @@ class DotsAndBoxesGame {
         if (completedSquares === totalSquares) {
             setTimeout(() => this.showWinner(), 500);
         }
+    }
+
+    isGameOver() {
+        const totalSquares = (this.gridSize - 1) * (this.gridSize - 1);
+        const completedSquares = Object.keys(this.squares).length;
+        return completedSquares === totalSquares;
     }
 
     showWinner() {
