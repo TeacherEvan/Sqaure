@@ -180,21 +180,7 @@ input[type="color"] {
 }
 
 .player-info.active {
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
-    }
-
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px 10px rgba(255, 255, 255, 0);
-    }
+    animation: pulse 1.5s ease-in-out infinite;
 }
 
 .exit-btn {

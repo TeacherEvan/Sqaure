@@ -268,19 +268,37 @@ if (document.readyState === 'loading') {
 function triggerFullscreenOnLoad() {
     // Small delay to ensure DOM is ready and user interaction is detected
     setTimeout(() => {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(err => {
-                console.log('Fullscreen on load not supported or denied:', err);
-            });
-        } else if (elem.webkitRequestFullscreen) { // Safari
-            elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) { // IE11
-            elem.msRequestFullscreen();
-        } else if (elem.mozRequestFullScreen) { // Firefox
-            elem.mozRequestFullScreen();
-        }
+        requestFullscreen();
     }, 100);
+}
+
+// Centralized fullscreen request function
+function requestFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {
+            // Fullscreen not supported or denied
+        });
+    } else if (elem.webkitRequestFullscreen) { // Safari
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE11
+        elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+        elem.mozRequestFullScreen();
+    }
+}
+
+// Centralized fullscreen exit function
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) { // Safari
+        document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE11
+        document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+    }
 }
 
 let selectedGridSize = null;
@@ -308,35 +326,15 @@ document.getElementById('startGame').addEventListener('click', () => {
     document.getElementById('welcomeScreen').classList.remove('active');
     document.getElementById('gameScreen').classList.add('active');
 
-    // Force fullscreen on supported browsers with cross-browser support
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(err => {
-            console.log('Fullscreen not supported or denied:', err);
-        });
-    } else if (elem.webkitRequestFullscreen) { // Safari
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { // IE11
-        elem.msRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) { // Firefox
-        elem.mozRequestFullScreen();
-    }
+    // Force fullscreen on supported browsers
+    requestFullscreen();
 
     game = new DotsAndBoxesGame(selectedGridSize, player1Color, player2Color);
 });
 
 // Exit game
 document.getElementById('exitGame').addEventListener('click', () => {
-    // Exit fullscreen with cross-browser support
-    if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => { });
-    } else if (document.webkitExitFullscreen) { // Safari
-        document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { // IE11
-        document.msExitFullscreen();
-    } else if (document.mozCancelFullScreen) { // Firefox
-        document.mozCancelFullScreen();
-    }
+    exitFullscreen();
 
     document.getElementById('gameScreen').classList.remove('active');
     document.getElementById('welcomeScreen').classList.add('active');
