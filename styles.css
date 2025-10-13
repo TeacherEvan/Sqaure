@@ -1,0 +1,311 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #ffffff;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+.screen {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Welcome Screen */
+.welcome-container {
+    max-width: 600px;
+    margin: auto;
+    padding: 40px;
+    text-align: center;
+}
+
+.welcome-container h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.credit {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 40px;
+}
+
+.setup-section {
+    margin: 30px 0;
+}
+
+.setup-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.grid-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.grid-btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border: 3px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.3s;
+}
+
+.grid-btn:hover {
+    border-color: #4CAF50;
+    transform: scale(1.05);
+}
+
+.grid-btn.selected {
+    border-color: #4CAF50;
+    background: #4CAF50;
+    color: white;
+}
+
+input[type="color"] {
+    width: 100px;
+    height: 50px;
+    border: none;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.start-btn {
+    margin-top: 30px;
+    padding: 20px 50px;
+    font-size: 1.5rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.start-btn:hover:not(:disabled) {
+    background: #45a049;
+    transform: scale(1.05);
+}
+
+.start-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Game Screen */
+#gameScreen {
+    background: white;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 150px;
+}
+
+.player-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.player-score {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.player-info.active {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px 10px rgba(255, 255, 255, 0);
+    }
+}
+
+.exit-btn {
+    padding: 10px 30px;
+    font-size: 1rem;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.exit-btn:hover {
+    background: #da190b;
+}
+
+.game-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    border: 2px solid #333;
+    cursor: pointer;
+}
+
+.turn-indicator {
+    text-align: center;
+    padding: 15px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    background: #f5f5f5;
+    border-top: 2px solid #ddd;
+}
+
+/* Winner Screen */
+.winner-container {
+    max-width: 600px;
+    margin: auto;
+    padding: 40px;
+    text-align: center;
+}
+
+.winner-container h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.winner-container h2 {
+    font-size: 2rem;
+    margin-bottom: 40px;
+    color: #4CAF50;
+}
+
+/* Mobile Landscape Detection */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+    body::before {
+        content: 'Please rotate your device to landscape mode';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        text-align: center;
+        padding: 20px;
+        z-index: 9999;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .game-header {
+        padding: 10px 20px;
+    }
+
+    .player-name {
+        font-size: 1rem;
+    }
+
+    .player-score {
+        font-size: 1.5rem;
+    }
+
+    .game-container {
+        padding: 10px;
+    }
+}
+
+canvas {
+    display: block;
+    cursor: pointer;
+    touch-action: none;
+    /* Prevent browser touch gestures */
+    -webkit-touch-callout: none;
+    /* Prevent callout on long-press */
+    -webkit-user-select: none;
+    /* Prevent text selection */
+    user-select: none;
+}
+
+/* Enhanced pulsing animation for active player */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px 10px rgba(255, 255, 255, 0);
+    }
+}
+
+.player-info.active {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Add celebration animation class */
+@keyframes celebrate {
+    0% {
+        transform: scale(1) rotate(0deg);
+    }
+
+    25% {
+        transform: scale(1.1) rotate(-5deg);
+    }
+
+    75% {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+.player-info.scored {
+    animation: celebrate 0.6s ease-in-out;
+}
