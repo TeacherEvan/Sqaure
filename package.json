@@ -1,0 +1,29 @@
+{
+    "name": "dots-and-boxes-game",
+    "version": "2.0.0",
+    "description": "Modern browser-based Dots and Boxes game with adaptive landscape layouts and touch support",
+    "main": "index.html",
+    "scripts": {
+        "start": "npx http-server -p 8000 -o",
+        "serve": "python -m http.server 8000"
+    },
+    "keywords": [
+        "game",
+        "dots-and-boxes",
+        "canvas",
+        "javascript",
+        "html5",
+        "two-player",
+        "board-game"
+    ],
+    "author": "Teacher Evan",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/TeacherEvan/Sqaure.git"
+    },
+    "homepage": "https://github.com/TeacherEvan/Sqaure#readme",
+    "bugs": {
+        "url": "https://github.com/TeacherEvan/Sqaure/issues"
+    }
+}

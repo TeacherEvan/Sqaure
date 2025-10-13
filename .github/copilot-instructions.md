@@ -60,9 +60,9 @@ Canvas recalculates on window resize to fit container while maintaining playabil
 ## UI Conventions
 
 ### Player Representation
-- Player 1: Default red (`#FF0000`)
-- Player 2: Default blue (`#0000FF`)
-- Completed squares: Semi-transparent player color (`color + '40'` alpha)
+- Player 1: Default red (color code FF0000)
+- Player 2: Default blue (color code 0000FF)
+- Completed squares: Semi-transparent player color (color + '40' alpha)
 - Player numbers (1 or 2) rendered in square centers
 
 ### Screen Transitions

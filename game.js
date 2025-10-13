@@ -9,8 +9,8 @@ class DotsAndBoxesGame {
         this.squares = {};
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.dotRadius = 8;
-        this.lineWidth = 4;
+        this.dotRadius = 1.6; // 5 times smaller than 8
+        this.lineWidth = 1; // Also scaled down proportionally
         this.selectedDot = null;
         this.pulsatingLines = [];
 
@@ -34,14 +34,42 @@ class DotsAndBoxesGame {
         const maxWidth = container.clientWidth - 40;
         const maxHeight = container.clientHeight - 40;
 
-        const cellSize = Math.min(
-            Math.floor(maxWidth / (this.gridSize - 1)),
-            Math.floor(maxHeight / (this.gridSize - 1))
-        );
+        // Calculate optimal grid dimensions for landscape
+        // If gridSize is passed as a single number, create landscape layout
+        if (typeof this.gridSize === 'number') {
+            const aspectRatio = maxWidth / maxHeight;
 
-        this.cellSize = Math.max(20, Math.min(cellSize, 80));
-        this.canvas.width = (this.gridSize - 1) * this.cellSize + 40;
-        this.canvas.height = (this.gridSize - 1) * this.cellSize + 40;
+            // Optimize grid for landscape (width > height)
+            if (aspectRatio > 1.5) {
+                // Calculate cols and rows to fill landscape nicely
+                const totalSquares = (this.gridSize - 1) * (this.gridSize - 1);
+                this.gridCols = Math.ceil(Math.sqrt(totalSquares * aspectRatio));
+                this.gridRows = Math.ceil(totalSquares / (this.gridCols - 1)) + 1;
+
+                // Ensure we have at least the minimum dimensions
+                this.gridCols = Math.max(this.gridCols, Math.ceil(this.gridSize * 1.2));
+                this.gridRows = Math.max(this.gridRows, Math.ceil(this.gridSize * 0.6));
+            } else {
+                // Use square grid for non-landscape displays
+                this.gridCols = this.gridSize;
+                this.gridRows = this.gridSize;
+            }
+        } else {
+            // If gridSize is an object with rows and cols
+            this.gridCols = this.gridSize.cols || this.gridSize;
+            this.gridRows = this.gridSize.rows || this.gridSize;
+        }
+
+        // Calculate cell size based on available space
+        const cellSizeWidth = Math.floor(maxWidth / (this.gridCols - 1));
+        const cellSizeHeight = Math.floor(maxHeight / (this.gridRows - 1));
+        const cellSize = Math.min(cellSizeWidth, cellSizeHeight);
+
+        // Allow smaller cell sizes now that dots are smaller
+        this.cellSize = Math.max(8, Math.min(cellSize, 40));
+
+        this.canvas.width = (this.gridCols - 1) * this.cellSize + 40;
+        this.canvas.height = (this.gridRows - 1) * this.cellSize + 40;
         this.offsetX = 20;
         this.offsetY = 20;
 
@@ -77,7 +105,7 @@ class DotsAndBoxesGame {
         const col = Math.round((x - this.offsetX) / this.cellSize);
         const row = Math.round((y - this.offsetY) / this.cellSize);
 
-        if (row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize) {
+        if (row >= 0 && row < this.gridRows && col >= 0 && col < this.gridCols) {
             const dotX = this.offsetX + col * this.cellSize;
             const dotY = this.offsetY + row * this.cellSize;
             const distance = Math.sqrt(Math.pow(x - dotX, 2) + Math.pow(y - dotY, 2));
@@ -136,7 +164,7 @@ class DotsAndBoxesGame {
                 }
             }
             // Check square below
-            if (start.row < this.gridSize - 1) {
+            if (start.row < this.gridRows - 1) {
                 const squareKey = `${start.row},${Math.min(start.col, end.col)}`;
                 if (this.isSquareComplete(start.row, Math.min(start.col, end.col))) {
                     this.squares[squareKey] = this.currentPlayer;
@@ -153,7 +181,7 @@ class DotsAndBoxesGame {
                 }
             }
             // Check square to the right
-            if (start.col < this.gridSize - 1) {
+            if (start.col < this.gridCols - 1) {
                 const squareKey = `${Math.min(start.row, end.row)},${start.col}`;
                 if (this.isSquareComplete(Math.min(start.row, end.row), start.col)) {
                     this.squares[squareKey] = this.currentPlayer;
@@ -367,13 +395,13 @@ class DotsAndBoxesGame {
             centerY
         });
 
-        // Create particle burst
+        // Create particle burst (scaled down for smaller cells)
         const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
-        const particleCount = 20;
+        const particleCount = 15; // Reduced from 20
 
         for (let i = 0; i < particleCount; i++) {
             const angle = (Math.PI * 2 * i) / particleCount;
-            const speed = 2 + Math.random() * 3;
+            const speed = 1 + Math.random() * 2; // Reduced from 2 + Math.random() * 3
 
             this.particles.push({
                 x: centerX,
@@ -381,7 +409,7 @@ class DotsAndBoxesGame {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 color: playerColor,
-                size: 3 + Math.random() * 4,
+                size: 1.5 + Math.random() * 2, // Reduced from 3 + Math.random() * 4
                 life: 1.0,
                 decay: 0.015 + Math.random() * 0.01
             });
@@ -395,8 +423,8 @@ class DotsAndBoxesGame {
         this.drawTouchVisuals();
 
         // Draw dots
-        for (let row = 0; row < this.gridSize; row++) {
-            for (let col = 0; col < this.gridSize; col++) {
+        for (let row = 0; row < this.gridRows; row++) {
+            for (let col = 0; col < this.gridCols; col++) {
                 const x = this.offsetX + col * this.cellSize;
                 const y = this.offsetY + row * this.cellSize;
 
@@ -407,9 +435,9 @@ class DotsAndBoxesGame {
 
                 if (this.selectedDot && this.selectedDot.row === row && this.selectedDot.col === col) {
                     this.ctx.strokeStyle = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
-                    this.ctx.lineWidth = 3;
+                    this.ctx.lineWidth = 1;
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, this.dotRadius + 5, 0, Math.PI * 2);
+                    this.ctx.arc(x, y, this.dotRadius + 2, 0, Math.PI * 2);
                     this.ctx.stroke();
                 }
             }
@@ -451,7 +479,9 @@ class DotsAndBoxesGame {
             this.ctx.fillRect(x, y, this.cellSize, this.cellSize);
 
             this.ctx.fillStyle = player === 1 ? this.player1Color : this.player2Color;
-            this.ctx.font = `bold ${this.cellSize / 2}px Arial`;
+            // Scale font size based on cell size
+            const fontSize = Math.max(8, Math.min(this.cellSize / 2, 20));
+            this.ctx.font = `bold ${fontSize}px Arial`;
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(player.toString(), x + this.cellSize / 2, y + this.cellSize / 2);
@@ -483,10 +513,10 @@ class DotsAndBoxesGame {
             const age = now - tv.startTime;
             const progress = age / tv.duration;
             const alpha = 1 - progress;
-            const radius = 20 + progress * 30;
+            const radius = 10 + progress * 15; // Scaled down from 20 + progress * 30
 
             this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
-            this.ctx.lineWidth = 3;
+            this.ctx.lineWidth = 1.5; // Scaled down from 3
             this.ctx.beginPath();
             this.ctx.arc(tv.x, tv.y, radius, 0, Math.PI * 2);
             this.ctx.stroke();
@@ -494,7 +524,7 @@ class DotsAndBoxesGame {
             // Inner dot
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
             this.ctx.beginPath();
-            this.ctx.arc(tv.x, tv.y, 8, 0, Math.PI * 2);
+            this.ctx.arc(tv.x, tv.y, 4, 0, Math.PI * 2); // Scaled down from 8
             this.ctx.fill();
         });
     }
@@ -614,7 +644,7 @@ class DotsAndBoxesGame {
     }
 
     checkGameOver() {
-        const totalSquares = (this.gridSize - 1) * (this.gridSize - 1);
+        const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
         const completedSquares = Object.keys(this.squares).length;
 
         if (completedSquares === totalSquares) {
@@ -623,7 +653,7 @@ class DotsAndBoxesGame {
     }
 
     isGameOver() {
-        const totalSquares = (this.gridSize - 1) * (this.gridSize - 1);
+        const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
         const completedSquares = Object.keys(this.squares).length;
         return completedSquares === totalSquares;
     }

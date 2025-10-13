@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "ES2017",
+        "module": "ES2015",
+        "moduleResolution": "node",
+        "lib": [
+            "ES2017",
+            "DOM"
+        ],
+        "checkJs": false,
+        "noEmit": true
+    },
+    "include": [
+        "*.js",
+        "**/*.js"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/node_modules/*"
+    ]
+}
