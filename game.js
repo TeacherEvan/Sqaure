@@ -17,6 +17,7 @@ class DotsAndBoxesGame {
         // Multi-touch support
         this.activeTouches = new Map(); // Track multiple touches by identifier
         this.touchVisuals = []; // Visual feedback for touch points
+        this.touchStartDot = null; // Track the dot where touch started
 
         // Animation system for completed squares
         this.squareAnimations = []; // Active square animations
@@ -284,8 +285,20 @@ class DotsAndBoxesGame {
                 duration: 300
             });
 
-            // Process the touch as a click
-            this.processTouchClick(x, y);
+            // Get the dot at touch start location and save it
+            const startDot = this.getNearestDot(x, y);
+            if (startDot) {
+                const distance = Math.sqrt(
+                    Math.pow(x - (this.offsetX + startDot.col * this.cellSize), 2) +
+                    Math.pow(y - (this.offsetY + startDot.row * this.cellSize), 2)
+                );
+                
+                if (distance <= this.cellSize * 0.3) {
+                    this.touchStartDot = startDot;
+                    this.selectedDot = startDot;
+                    this.isZooming = true;
+                }
+            }
         }
 
         this.draw();
@@ -320,12 +333,52 @@ class DotsAndBoxesGame {
 
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
+            const rect = this.canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            // Check if we should complete a line before clearing selection
+            if (this.touchStartDot) {
+                const endDot = this.getNearestDot(x, y);
+                if (endDot && this.isAdjacent(this.touchStartDot, endDot)) {
+                    const lineKey = this.getLineKey(this.touchStartDot, endDot);
+
+                    if (!this.lines.has(lineKey)) {
+                        this.lines.add(lineKey);
+                        this.pulsatingLines.push({
+                            line: lineKey,
+                            player: this.currentPlayer,
+                            time: Date.now()
+                        });
+
+                        const completedSquares = this.checkForSquares(lineKey);
+
+                        if (completedSquares.length === 0) {
+                            this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                            this.isZooming = false;
+                        } else {
+                            this.scores[this.currentPlayer] += completedSquares.length;
+                            completedSquares.forEach(squareKey => {
+                                this.triggerSquareAnimation(squareKey);
+                            });
+                        }
+
+                        this.updateUI();
+
+                        if (this.isGameOver()) {
+                            setTimeout(() => this.showWinner(), 1000);
+                        }
+                    }
+                }
+            }
+
             this.activeTouches.delete(touch.identifier);
         }
 
-        // Clear selected dot if no touches remain
+        // Clear selected dot and touch start dot if no touches remain
         if (this.activeTouches.size === 0) {
             this.selectedDot = null;
+            this.touchStartDot = null;
             this.draw();
         }
     }
