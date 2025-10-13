@@ -10,12 +10,15 @@ body {
     overflow: hidden;
     width: 100vw;
     height: 100vh;
+    /* Support for notched devices */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .screen {
     display: none;
     width: 100vw;
     height: 100vh;
+    position: relative;
 }
 
 .screen.active {
@@ -26,6 +29,8 @@ body {
 /* Welcome Screen */
 #welcomeScreen {
     position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 #welcomeCanvas {
@@ -44,6 +49,10 @@ body {
     margin: auto;
     padding: 40px;
     text-align: center;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .welcome-container h1 {
@@ -272,6 +281,51 @@ input[type="color"] {
 }
 
 @media screen and (max-width: 768px) {
+    .welcome-container {
+        padding: 20px;
+        min-height: auto;
+    }
+
+    .welcome-container h1 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .credit {
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+
+    .setup-section {
+        margin: 20px 0;
+    }
+
+    .setup-section h2 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    .grid-options {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .grid-btn {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+
+    input[type="color"] {
+        width: 80px;
+        height: 40px;
+    }
+
+    .start-btn {
+        margin-top: 20px;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+    }
+
     .game-header {
         padding: 10px 20px;
     }
@@ -286,6 +340,53 @@ input[type="color"] {
 
     .game-container {
         padding: 10px;
+    }
+}
+
+/* Landscape orientation on mobile - compact layout */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    .welcome-container {
+        padding: 10px 20px;
+        min-height: auto;
+    }
+
+    .welcome-container h1 {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+
+    .credit {
+        margin-bottom: 10px;
+        font-size: 0.8rem;
+    }
+
+    .setup-section {
+        margin: 10px 0;
+    }
+
+    .setup-section h2 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    .grid-options {
+        gap: 8px;
+    }
+
+    .grid-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+
+    input[type="color"] {
+        width: 60px;
+        height: 35px;
+    }
+
+    .start-btn {
+        margin-top: 10px;
+        padding: 10px 30px;
+        font-size: 1rem;
     }
 }
 
