@@ -21,6 +21,13 @@ class DotsAndBoxesGame {
         // Animation system for completed squares
         this.squareAnimations = []; // Active square animations
         this.particles = []; // Particle effects for celebrations
+        this.kissEmojis = []; // Kiss emoji animations for completed squares
+
+        // Zoom state
+        this.zoomLevel = 1;
+        this.zoomTargetX = 0;
+        this.zoomTargetY = 0;
+        this.isZooming = false;
 
         this.setupCanvas();
         this.setupEventListeners();
@@ -218,6 +225,7 @@ class DotsAndBoxesGame {
 
         if (!this.selectedDot) {
             this.selectedDot = dot;
+            this.isZooming = true;
             this.draw();
         } else {
             if (this.areAdjacent(this.selectedDot, dot)) {
@@ -235,12 +243,15 @@ class DotsAndBoxesGame {
 
                     if (completedSquares.length === 0) {
                         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                        // Reset zoom when turn changes
+                        this.isZooming = false;
                     } else {
                         this.scores[this.currentPlayer] += completedSquares.length;
                         // Trigger animations for completed squares
                         completedSquares.forEach(squareKey => {
                             this.triggerSquareAnimation(squareKey);
                         });
+                        // Keep zoom active since same player continues
                     }
 
                     this.updateUI();
@@ -332,6 +343,7 @@ class DotsAndBoxesGame {
 
         if (!this.selectedDot) {
             this.selectedDot = dot;
+            this.isZooming = true;
         } else {
             if (this.isAdjacent(this.selectedDot, dot)) {
                 const lineKey = this.getLineKey(this.selectedDot, dot);
@@ -349,8 +361,11 @@ class DotsAndBoxesGame {
                         });
 
                         this.scores[this.currentPlayer] += completedSquares.length;
+                        // Keep zoom active since same player continues
                     } else {
                         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                        // Reset zoom when turn changes
+                        this.isZooming = false;
                     }
 
                     this.updateUI();
@@ -386,6 +401,14 @@ class DotsAndBoxesGame {
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
         const centerY = this.offsetY + (row + 0.5) * this.cellSize;
 
+        // Add kiss emoji animation
+        this.kissEmojis.push({
+            x: centerX,
+            y: centerY,
+            startTime: Date.now(),
+            duration: 1000 // 1 second as specified
+        });
+
         // Add square scale animation
         this.squareAnimations.push({
             squareKey,
@@ -419,6 +442,22 @@ class DotsAndBoxesGame {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Save context and apply zoom if active
+        this.ctx.save();
+        
+        if (this.zoomLevel > 1.01 && this.selectedDot) {
+            const zoomX = this.offsetX + this.selectedDot.col * this.cellSize;
+            const zoomY = this.offsetY + this.selectedDot.row * this.cellSize;
+            
+            // Translate to zoom point, scale, then translate back
+            this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.scale(this.zoomLevel, this.zoomLevel);
+            this.ctx.translate(
+                -zoomX + (this.canvas.width / 2 - zoomX) / this.zoomLevel,
+                -zoomY + (this.canvas.height / 2 - zoomY) / this.zoomLevel
+            );
+        }
+
         // Draw touch visuals (before other elements)
         this.drawTouchVisuals();
 
@@ -433,13 +472,7 @@ class DotsAndBoxesGame {
                 this.ctx.arc(x, y, this.dotRadius, 0, Math.PI * 2);
                 this.ctx.fill();
 
-                if (this.selectedDot && this.selectedDot.row === row && this.selectedDot.col === col) {
-                    this.ctx.strokeStyle = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
-                    this.ctx.lineWidth = 1;
-                    this.ctx.beginPath();
-                    this.ctx.arc(x, y, this.dotRadius + 2, 0, Math.PI * 2);
-                    this.ctx.stroke();
-                }
+                // Selected dot highlighting moved to end of draw() for better visibility
             }
         }
 
@@ -493,17 +526,39 @@ class DotsAndBoxesGame {
         // Draw particles on top
         this.drawParticles();
 
-        // Draw selected dot
+        // Draw kiss emojis
+        this.drawKissEmojis();
+
+        // Draw selected dot with enhanced visibility
         if (this.selectedDot) {
             const x = this.offsetX + this.selectedDot.col * this.cellSize;
             const y = this.offsetY + this.selectedDot.row * this.cellSize;
 
-            this.ctx.strokeStyle = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
+            const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
+            
+            // Outer pulsing ring
+            const pulseScale = 1 + Math.sin(Date.now() / 200) * 0.2;
+            this.ctx.strokeStyle = playerColor;
             this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, (this.dotRadius + 8) * pulseScale, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // Inner solid ring
+            this.ctx.lineWidth = 2;
             this.ctx.beginPath();
             this.ctx.arc(x, y, this.dotRadius + 5, 0, Math.PI * 2);
             this.ctx.stroke();
+
+            // Redraw the dot itself to ensure it's visible
+            this.ctx.fillStyle = playerColor;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, this.dotRadius * 2, 0, Math.PI * 2);
+            this.ctx.fill();
         }
+
+        // Restore context after zoom
+        this.ctx.restore();
     }
 
     drawTouchVisuals() {
@@ -592,6 +647,35 @@ class DotsAndBoxesGame {
         });
     }
 
+    drawKissEmojis() {
+        const now = Date.now();
+        
+        this.kissEmojis.forEach(kiss => {
+            const age = now - kiss.startTime;
+            const progress = age / kiss.duration;
+            
+            if (progress >= 1) return;
+            
+            // Ease-out for scale (grow then shrink slightly)
+            const scaleProgress = progress < 0.5 ? progress * 2 : 1;
+            const scale = 0.5 + scaleProgress * 1.5;
+            
+            // Fade out in second half
+            const alpha = progress < 0.5 ? 1 : 1 - ((progress - 0.5) * 2);
+            
+            // Move upward slightly
+            const yOffset = progress * -20;
+            
+            this.ctx.save();
+            this.ctx.globalAlpha = alpha;
+            this.ctx.font = `${this.cellSize * scale}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('💋', kiss.x, kiss.y + yOffset);
+            this.ctx.restore();
+        });
+    }
+
     getLinePlayer(lineKey) {
         // Determine which player drew the line based on when it was added
         for (const pulsating of this.pulsatingLines) {
@@ -620,9 +704,22 @@ class DotsAndBoxesGame {
         this.touchVisuals = this.touchVisuals.filter(tv =>
             now - tv.startTime < tv.duration
         );
+        this.kissEmojis = this.kissEmojis.filter(kiss =>
+            now - kiss.startTime < kiss.duration
+        );
 
-        // Redraw if animations are active
-        if (this.particles.length > 0 || this.squareAnimations.length > 0 || this.touchVisuals.length > 0) {
+        // Update zoom smoothly
+        if (this.isZooming && this.selectedDot) {
+            const targetZoom = 1.5;
+            this.zoomLevel += (targetZoom - this.zoomLevel) * 0.1;
+        } else {
+            this.zoomLevel += (1 - this.zoomLevel) * 0.1;
+        }
+
+        // Redraw if animations are active or zooming
+        if (this.particles.length > 0 || this.squareAnimations.length > 0 || 
+            this.touchVisuals.length > 0 || this.kissEmojis.length > 0 ||
+            Math.abs(this.zoomLevel - 1) > 0.01 || this.selectedDot) {
             this.draw();
         }
 
