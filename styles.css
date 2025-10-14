@@ -214,6 +214,18 @@ input[type="color"] {
     background: rgba(255, 255, 255, 0.9);
 }
 
+.game-footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    background: rgba(245, 245, 245, 0.95);
+    border-top: 2px solid #ddd;
+}
+
 .zoom-controls {
     position: relative;
     z-index: 1;
@@ -221,9 +233,9 @@ input[type="color"] {
     justify-content: center;
     align-items: center;
     gap: 6px;
-    padding: 6px;
-    background: rgba(245, 245, 245, 0.95);
-    border-top: 2px solid #ddd;
+    padding: 0;
+    background: transparent;
+    border-top: none;
 }
 
 .zoom-btn {
@@ -257,21 +269,24 @@ input[type="color"] {
 
 /* Mobile-specific zoom controls */
 @media screen and (max-width: 768px) {
+    .game-footer {
+        padding: 6px 8px;
+        gap: 8px;
+    }
+    
     .zoom-controls {
-        padding: 8px 6px;
-        gap: 6px;
+        gap: 5px;
     }
     
     .zoom-btn {
-        padding: 10px 16px;
-        font-size: 1rem;
-        min-width: 60px;
+        padding: 8px 14px;
+        font-size: 0.95rem;
+        min-width: 55px;
         touch-action: manipulation;
     }
     
     .turn-indicator {
-        padding: 8px;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
     
     .game-header {
@@ -311,12 +326,13 @@ input[type="color"] {
 .turn-indicator {
     position: relative;
     z-index: 1;
-    text-align: center;
-    padding: 8px;
-    font-size: 1rem;
+    text-align: left;
+    padding: 0;
+    font-size: 0.9rem;
     font-weight: bold;
-    background: rgba(245, 245, 245, 0.95);
-    border-top: 2px solid #ddd;
+    background: transparent;
+    border-top: none;
+    flex: 1;
 }
 
 /* Winner Screen */
