@@ -80,6 +80,10 @@ class DotsAndBoxesGame {
         const logicalWidth = (this.gridCols - 1) * this.cellSize + 40;
         const logicalHeight = (this.gridRows - 1) * this.cellSize + 40;
         
+        // Store logical dimensions for use in draw() method
+        this.logicalWidth = logicalWidth;
+        this.logicalHeight = logicalHeight;
+        
         // Account for device pixel ratio for crisp rendering on high-DPI displays
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = logicalWidth * dpr;
@@ -97,8 +101,7 @@ class DotsAndBoxesGame {
         this.canvas = newCanvas;
         this.ctx = newCanvas.getContext('2d');
         
-        // Scale context to match device pixel ratio
-        const dpr = window.devicePixelRatio || 1;
+        // Scale context to match device pixel ratio (dpr already declared above)
         this.ctx.scale(dpr, dpr);
 
         // Multi-touch event listeners
@@ -526,7 +529,8 @@ class DotsAndBoxesGame {
     }
 
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // Use logical dimensions for clearRect since context is scaled by DPR
+        this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
 
         // Save context and apply zoom if active
         this.ctx.save();
