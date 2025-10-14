@@ -18,6 +18,8 @@ A modern, browser-based implementation of the classic Dots and Boxes game with a
 
 - **Adaptive Landscape Layout** - Automatically optimizes grid for landscape displays (e.g., 30x30 becomes ~50×18)
 - **Miniaturized Design** - Dots are 5× smaller than traditional implementations for more gameplay area
+- **Manual Zoom Controls** - 4 zoom levels (1x, 2x, 3x, 5x) for precise gameplay on any device
+- **Two-Finger Pan** - Navigate zoomed boards with intuitive pan gestures
 - **Smooth Animations** - Particle effects and square completion animations
 - **Pulsating Lines** - Visual feedback for newly drawn lines
 - **Touch Visuals** - Ripple effects for touch interactions
@@ -84,6 +86,8 @@ The game offers three preset grid sizes that automatically adapt to your display
 - **Touch**: Tap dots on touchscreen devices
 - **Selection**: Click a dot, then click an adjacent dot to draw a line
 - **Visual Feedback**: Selected dot shows a colored ring
+- **Zoom Controls**: Use 1x, 2x, 3x, or 5x buttons to zoom in/out
+- **Pan**: When zoomed, use two fingers to drag and navigate the board
 
 ### Strategy Tips
 
@@ -100,6 +104,7 @@ Sqaure/
 ├── styles.css          # Styling and responsive design
 ├── game.js             # Core game logic and canvas rendering
 ├── welcome.js          # Screen navigation and game initialization
+├── ZOOM_FEATURE.md     # Zoom and pan feature documentation
 ├── README.md           # This file
 └── .github/
     └── copilot-instructions.md  # Development guidelines
