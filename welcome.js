@@ -1,3 +1,5 @@
+'use strict';
+
 // Welcome Screen Background Animation
 class WelcomeAnimation {
     constructor() {
