@@ -76,8 +76,17 @@ class DotsAndBoxesGame {
         // Allow smaller cell sizes now that dots are smaller
         this.cellSize = Math.max(8, Math.min(cellSize, 40));
 
-        this.canvas.width = (this.gridCols - 1) * this.cellSize + 40;
-        this.canvas.height = (this.gridRows - 1) * this.cellSize + 40;
+        // Store logical dimensions
+        const logicalWidth = (this.gridCols - 1) * this.cellSize + 40;
+        const logicalHeight = (this.gridRows - 1) * this.cellSize + 40;
+        
+        // Account for device pixel ratio for crisp rendering on high-DPI displays
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = logicalWidth * dpr;
+        this.canvas.height = logicalHeight * dpr;
+        this.canvas.style.width = logicalWidth + 'px';
+        this.canvas.style.height = logicalHeight + 'px';
+        
         this.offsetX = 20;
         this.offsetY = 20;
 
@@ -87,6 +96,10 @@ class DotsAndBoxesGame {
         oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
         this.canvas = newCanvas;
         this.ctx = newCanvas.getContext('2d');
+        
+        // Scale context to match device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        this.ctx.scale(dpr, dpr);
 
         // Multi-touch event listeners
         this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
@@ -225,8 +238,14 @@ class DotsAndBoxesGame {
         if (!dot) return;
 
         if (!this.selectedDot) {
+            // Select first dot
             this.selectedDot = dot;
             this.isZooming = true;
+            this.draw();
+        } else if (this.selectedDot.row === dot.row && this.selectedDot.col === dot.col) {
+            // Clicked same dot - deselect
+            this.selectedDot = null;
+            this.isZooming = false;
             this.draw();
         } else {
             if (this.areAdjacent(this.selectedDot, dot)) {
@@ -257,10 +276,15 @@ class DotsAndBoxesGame {
 
                     this.updateUI();
                     this.checkGameOver();
+                    
+                    // Clear selection after drawing line
+                    this.selectedDot = null;
                 }
+            } else {
+                // Clicked non-adjacent dot - select the new dot
+                this.selectedDot = dot;
             }
-
-            this.selectedDot = null;
+            
             this.draw();
         }
     }
@@ -375,10 +399,9 @@ class DotsAndBoxesGame {
             this.activeTouches.delete(touch.identifier);
         }
 
-        // Clear selected dot and touch start dot if no touches remain
+        // Don't clear selected dot - allow two-tap interaction
+        // Only clear if a line was successfully drawn
         if (this.activeTouches.size === 0) {
-            this.selectedDot = null;
-            this.touchStartDot = null;
             this.draw();
         }
     }
@@ -395,8 +418,13 @@ class DotsAndBoxesGame {
         if (distance > this.cellSize * 0.3) return;
 
         if (!this.selectedDot) {
+            // Select first dot
             this.selectedDot = dot;
             this.isZooming = true;
+        } else if (this.selectedDot.row === dot.row && this.selectedDot.col === dot.col) {
+            // Tapped same dot - deselect
+            this.selectedDot = null;
+            this.isZooming = false;
         } else {
             if (this.isAdjacent(this.selectedDot, dot)) {
                 const lineKey = this.getLineKey(this.selectedDot, dot);
@@ -426,9 +454,14 @@ class DotsAndBoxesGame {
                     if (this.isGameOver()) {
                         setTimeout(() => this.showWinner(), 1000);
                     }
+                    
+                    // Clear selection after drawing line
+                    this.selectedDot = null;
                 }
+            } else {
+                // Tapped non-adjacent dot - select the new dot
+                this.selectedDot = dot;
             }
-            this.selectedDot = null;
         }
 
         this.draw();
