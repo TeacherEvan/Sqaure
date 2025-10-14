@@ -214,6 +214,42 @@ input[type="color"] {
     background: rgba(255, 255, 255, 0.9);
 }
 
+.zoom-controls {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(245, 245, 245, 0.95);
+    border-top: 2px solid #ddd;
+}
+
+.zoom-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: 2px solid #ddd;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s;
+    min-width: 60px;
+}
+
+.zoom-btn:hover {
+    border-color: #4CAF50;
+    transform: scale(1.05);
+}
+
+.zoom-btn.active {
+    border-color: #4CAF50;
+    background: #4CAF50;
+    color: white;
+}
+
 .turn-indicator {
     position: relative;
     z-index: 1;
