@@ -204,7 +204,7 @@ input[type="color"] {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: 10px;
     overflow: hidden;
 }
 
@@ -435,7 +435,7 @@ input[type="color"] {
     }
 
     .game-container {
-        padding: 10px;
+        padding: 5px;
     }
 }
 
