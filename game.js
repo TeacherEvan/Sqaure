@@ -25,10 +25,13 @@ class DotsAndBoxesGame {
         this.kissEmojis = []; // Kiss emoji animations for completed squares
 
         // Zoom state
-        this.zoomLevel = 1;
-        this.zoomTargetX = 0;
-        this.zoomTargetY = 0;
-        this.isZooming = false;
+        this.manualZoomLevel = 1; // User-selected zoom level (1, 2, 3, or 5)
+        this.zoomLevel = 1; // Current animated zoom level
+        this.panOffsetX = 0; // Pan offset X
+        this.panOffsetY = 0; // Pan offset Y
+        this.isPanning = false;
+        this.panStartX = 0;
+        this.panStartY = 0;
 
         this.setupCanvas();
         this.setupEventListeners();
@@ -114,6 +117,9 @@ class DotsAndBoxesGame {
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
 
+        // Add zoom control listeners
+        this.setupZoomControls();
+
         // Start animation loop
         this.animate();
     }
@@ -123,6 +129,37 @@ class DotsAndBoxesGame {
             this.setupCanvas();
             this.draw();
         });
+    }
+
+    setupZoomControls() {
+        const zoomButtons = document.querySelectorAll('.zoom-btn');
+        zoomButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const zoom = parseInt(e.target.dataset.zoom);
+                this.setZoomLevel(zoom);
+                
+                // Update active button
+                zoomButtons.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+    }
+
+    setZoomLevel(level) {
+        this.manualZoomLevel = level;
+        // Reset pan when changing zoom
+        this.panOffsetX = 0;
+        this.panOffsetY = 0;
+        
+        // Show/hide pan hint
+        const panHint = document.getElementById('panHint');
+        if (panHint) {
+            if (level > 1) {
+                panHint.classList.add('visible');
+            } else {
+                panHint.classList.remove('visible');
+            }
+        }
     }
 
     getNearestDot(x, y) {
@@ -243,12 +280,10 @@ class DotsAndBoxesGame {
         if (!this.selectedDot) {
             // Select first dot
             this.selectedDot = dot;
-            this.isZooming = true;
             this.draw();
         } else if (this.selectedDot.row === dot.row && this.selectedDot.col === dot.col) {
             // Clicked same dot - deselect
             this.selectedDot = null;
-            this.isZooming = false;
             this.draw();
         } else {
             if (this.areAdjacent(this.selectedDot, dot)) {
@@ -266,15 +301,12 @@ class DotsAndBoxesGame {
 
                     if (completedSquares.length === 0) {
                         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                        // Reset zoom when turn changes
-                        this.isZooming = false;
                     } else {
                         this.scores[this.currentPlayer] += completedSquares.length;
                         // Trigger animations for completed squares
                         completedSquares.forEach(squareKey => {
                             this.triggerSquareAnimation(squareKey);
                         });
-                        // Keep zoom active since same player continues
                     }
 
                     this.updateUI();
@@ -294,6 +326,16 @@ class DotsAndBoxesGame {
 
     handleTouchStart(e) {
         e.preventDefault();
+
+        // If zoomed in and two-finger touch, start panning
+        if (e.touches.length === 2 && this.manualZoomLevel > 1) {
+            this.isPanning = true;
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            this.panStartX = (touch1.clientX + touch2.clientX) / 2;
+            this.panStartY = (touch1.clientY + touch2.clientY) / 2;
+            return;
+        }
 
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
@@ -323,7 +365,6 @@ class DotsAndBoxesGame {
                 if (distance <= this.cellSize * 0.3) {
                     this.touchStartDot = startDot;
                     this.selectedDot = startDot;
-                    this.isZooming = true;
                 }
             }
         }
@@ -333,6 +374,26 @@ class DotsAndBoxesGame {
 
     handleTouchMove(e) {
         e.preventDefault();
+
+        // Handle panning with two fingers when zoomed
+        if (this.isPanning && e.touches.length === 2 && this.manualZoomLevel > 1) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentX = (touch1.clientX + touch2.clientX) / 2;
+            const currentY = (touch1.clientY + touch2.clientY) / 2;
+            
+            const deltaX = (currentX - this.panStartX) / this.zoomLevel;
+            const deltaY = (currentY - this.panStartY) / this.zoomLevel;
+            
+            this.panOffsetX += deltaX;
+            this.panOffsetY += deltaY;
+            
+            this.panStartX = currentX;
+            this.panStartY = currentY;
+            
+            this.draw();
+            return;
+        }
 
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
@@ -358,6 +419,11 @@ class DotsAndBoxesGame {
     handleTouchEnd(e) {
         e.preventDefault();
 
+        // Reset panning if fingers lifted
+        if (e.touches.length < 2) {
+            this.isPanning = false;
+        }
+
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
             const rect = this.canvas.getBoundingClientRect();
@@ -382,7 +448,6 @@ class DotsAndBoxesGame {
 
                         if (completedSquares.length === 0) {
                             this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                            this.isZooming = false;
                         } else {
                             this.scores[this.currentPlayer] += completedSquares.length;
                             completedSquares.forEach(squareKey => {
@@ -423,11 +488,9 @@ class DotsAndBoxesGame {
         if (!this.selectedDot) {
             // Select first dot
             this.selectedDot = dot;
-            this.isZooming = true;
         } else if (this.selectedDot.row === dot.row && this.selectedDot.col === dot.col) {
             // Tapped same dot - deselect
             this.selectedDot = null;
-            this.isZooming = false;
         } else {
             if (this.isAdjacent(this.selectedDot, dot)) {
                 const lineKey = this.getLineKey(this.selectedDot, dot);
@@ -445,11 +508,8 @@ class DotsAndBoxesGame {
                         });
 
                         this.scores[this.currentPlayer] += completedSquares.length;
-                        // Keep zoom active since same player continues
                     } else {
                         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                        // Reset zoom when turn changes
-                        this.isZooming = false;
                     }
 
                     this.updateUI();
@@ -535,17 +595,15 @@ class DotsAndBoxesGame {
         // Save context and apply zoom if active
         this.ctx.save();
         
-        if (this.zoomLevel > 1.01 && this.selectedDot) {
-            const zoomX = this.offsetX + this.selectedDot.col * this.cellSize;
-            const zoomY = this.offsetY + this.selectedDot.row * this.cellSize;
+        if (this.zoomLevel > 1.01) {
+            // Center of canvas for zoom origin
+            const centerX = this.canvas.width / (2 * (window.devicePixelRatio || 1));
+            const centerY = this.canvas.height / (2 * (window.devicePixelRatio || 1));
             
-            // Translate to zoom point, scale, then translate back
-            this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+            // Apply transformations: translate to center, scale, translate back with pan offset
+            this.ctx.translate(centerX, centerY);
             this.ctx.scale(this.zoomLevel, this.zoomLevel);
-            this.ctx.translate(
-                -zoomX + (this.canvas.width / 2 - zoomX) / this.zoomLevel,
-                -zoomY + (this.canvas.height / 2 - zoomY) / this.zoomLevel
-            );
+            this.ctx.translate(-centerX + this.panOffsetX, -centerY + this.panOffsetY);
         }
 
         // Draw touch visuals (before other elements)
@@ -799,17 +857,12 @@ class DotsAndBoxesGame {
         );
 
         // Update zoom smoothly
-        if (this.isZooming && this.selectedDot) {
-            const targetZoom = 1.5;
-            this.zoomLevel += (targetZoom - this.zoomLevel) * 0.1;
-        } else {
-            this.zoomLevel += (1 - this.zoomLevel) * 0.1;
-        }
+        this.zoomLevel += (this.manualZoomLevel - this.zoomLevel) * 0.15;
 
         // Redraw if animations are active or zooming
         if (this.particles.length > 0 || this.squareAnimations.length > 0 || 
             this.touchVisuals.length > 0 || this.kissEmojis.length > 0 ||
-            Math.abs(this.zoomLevel - 1) > 0.01 || this.selectedDot) {
+            Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || this.selectedDot) {
             this.draw();
         }
 
