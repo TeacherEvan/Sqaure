@@ -156,7 +156,7 @@ input[type="color"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 40px;
+    padding: 8px 20px;
     background: rgba(245, 245, 245, 0.95);
     border-bottom: 2px solid #ddd;
 }
@@ -165,17 +165,17 @@ input[type="color"] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 150px;
+    min-width: 100px;
 }
 
 .player-name {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 .player-score {
-    font-size: 2rem;
+    font-size: 1.3rem;
     font-weight: bold;
 }
 
@@ -184,8 +184,8 @@ input[type="color"] {
 }
 
 .exit-btn {
-    padding: 10px 30px;
-    font-size: 1rem;
+    padding: 6px 20px;
+    font-size: 0.85rem;
     background: #f44336;
     color: white;
     border: none;
@@ -204,7 +204,7 @@ input[type="color"] {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: 10px;
     overflow: hidden;
 }
 
@@ -214,21 +214,33 @@ input[type="color"] {
     background: rgba(255, 255, 255, 0.9);
 }
 
+.game-footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    background: rgba(245, 245, 245, 0.95);
+    border-top: 2px solid #ddd;
+}
+
 .zoom-controls {
     position: relative;
     z-index: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: rgba(245, 245, 245, 0.95);
-    border-top: 2px solid #ddd;
+    gap: 6px;
+    padding: 0;
+    background: transparent;
+    border-top: none;
 }
 
 .zoom-btn {
-    padding: 10px 20px;
-    font-size: 1rem;
+    padding: 8px 16px;
+    font-size: 0.9rem;
     font-weight: bold;
     border: 2px solid #ddd;
     background: white;
@@ -236,7 +248,7 @@ input[type="color"] {
     cursor: pointer;
     border-radius: 8px;
     transition: all 0.3s;
-    min-width: 60px;
+    min-width: 50px;
 }
 
 .zoom-btn:hover {
@@ -257,21 +269,36 @@ input[type="color"] {
 
 /* Mobile-specific zoom controls */
 @media screen and (max-width: 768px) {
-    .zoom-controls {
-        padding: 15px 10px;
+    .game-footer {
+        padding: 6px 8px;
         gap: 8px;
     }
     
+    .zoom-controls {
+        gap: 5px;
+    }
+    
     .zoom-btn {
-        padding: 12px 18px;
-        font-size: 1.1rem;
-        min-width: 70px;
+        padding: 8px 14px;
+        font-size: 0.95rem;
+        min-width: 55px;
         touch-action: manipulation;
     }
     
     .turn-indicator {
-        padding: 12px;
-        font-size: 1.1rem;
+        font-size: 0.85rem;
+    }
+    
+    .game-header {
+        padding: 6px 15px;
+    }
+    
+    .player-name {
+        font-size: 0.85rem;
+    }
+    
+    .player-score {
+        font-size: 1.2rem;
     }
 }
 
@@ -279,29 +306,33 @@ input[type="color"] {
     position: relative;
     z-index: 1;
     text-align: center;
-    padding: 8px 15px;
-    font-size: 0.9rem;
+    padding: 4px 10px;
+    font-size: 0.75rem;
     font-style: italic;
     color: #666;
     background: rgba(245, 245, 245, 0.95);
     border-top: 1px solid #ddd;
     opacity: 0;
     transition: opacity 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
 }
 
 .pan-hint.visible {
     opacity: 1;
+    max-height: 30px;
 }
 
 .turn-indicator {
     position: relative;
     z-index: 1;
-    text-align: center;
-    padding: 15px;
-    font-size: 1.3rem;
+    text-align: left;
+    padding: 0;
+    font-size: 0.9rem;
     font-weight: bold;
-    background: rgba(245, 245, 245, 0.95);
-    border-top: 2px solid #ddd;
+    background: transparent;
+    border-top: none;
+    flex: 1;
 }
 
 /* Winner Screen */
@@ -392,19 +423,19 @@ input[type="color"] {
     }
 
     .game-header {
-        padding: 10px 20px;
+        padding: 6px 15px;
     }
 
     .player-name {
-        font-size: 1rem;
+        font-size: 0.85rem;
     }
 
     .player-score {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 
     .game-container {
-        padding: 10px;
+        padding: 5px;
     }
 }
 
