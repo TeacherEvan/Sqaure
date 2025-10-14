@@ -244,10 +244,53 @@ input[type="color"] {
     transform: scale(1.05);
 }
 
+.zoom-btn:active {
+    transform: scale(0.95);
+}
+
 .zoom-btn.active {
     border-color: #4CAF50;
     background: #4CAF50;
     color: white;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+}
+
+/* Mobile-specific zoom controls */
+@media screen and (max-width: 768px) {
+    .zoom-controls {
+        padding: 15px 10px;
+        gap: 8px;
+    }
+    
+    .zoom-btn {
+        padding: 12px 18px;
+        font-size: 1.1rem;
+        min-width: 70px;
+        touch-action: manipulation;
+    }
+    
+    .turn-indicator {
+        padding: 12px;
+        font-size: 1.1rem;
+    }
+}
+
+.pan-hint {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: #666;
+    background: rgba(245, 245, 245, 0.95);
+    border-top: 1px solid #ddd;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.pan-hint.visible {
+    opacity: 1;
 }
 
 .turn-indicator {

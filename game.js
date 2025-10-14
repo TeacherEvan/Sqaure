@@ -150,6 +150,16 @@ class DotsAndBoxesGame {
         // Reset pan when changing zoom
         this.panOffsetX = 0;
         this.panOffsetY = 0;
+        
+        // Show/hide pan hint
+        const panHint = document.getElementById('panHint');
+        if (panHint) {
+            if (level > 1) {
+                panHint.classList.add('visible');
+            } else {
+                panHint.classList.remove('visible');
+            }
+        }
     }
 
     getNearestDot(x, y) {
