@@ -353,20 +353,6 @@ class DotsAndBoxesGame {
                 startTime: Date.now(),
                 duration: 300
             });
-
-            // Get the dot at touch start location and save it
-            const startDot = this.getNearestDot(x, y);
-            if (startDot) {
-                const distance = Math.sqrt(
-                    Math.pow(x - (this.offsetX + startDot.col * this.cellSize), 2) +
-                    Math.pow(y - (this.offsetY + startDot.row * this.cellSize), 2)
-                );
-                
-                if (distance <= this.cellSize * 0.3) {
-                    this.touchStartDot = startDot;
-                    this.selectedDot = startDot;
-                }
-            }
         }
 
         this.draw();
@@ -430,36 +416,65 @@ class DotsAndBoxesGame {
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
 
-            // Check if we should complete a line before clearing selection
-            if (this.touchStartDot) {
-                const endDot = this.getNearestDot(x, y);
-                if (endDot && this.isAdjacent(this.touchStartDot, endDot)) {
-                    const lineKey = this.getLineKey(this.touchStartDot, endDot);
+            // Get the dot at the touch end position
+            const endDot = this.getNearestDot(x, y);
+            
+            if (endDot) {
+                const distance = Math.sqrt(
+                    Math.pow(x - (this.offsetX + endDot.col * this.cellSize), 2) +
+                    Math.pow(y - (this.offsetY + endDot.row * this.cellSize), 2)
+                );
+                
+                // Only process if touch ended near a dot
+                if (distance <= this.cellSize * 0.3) {
+                    // Check for two-tap interaction to draw a line
+                    if (this.selectedDot && (this.selectedDot.row !== endDot.row || this.selectedDot.col !== endDot.col)) {
+                        // Different dot selected - check if adjacent
+                        if (this.isAdjacent(this.selectedDot, endDot)) {
+                            const lineKey = this.getLineKey(this.selectedDot, endDot);
 
-                    if (!this.lines.has(lineKey)) {
-                        this.lines.add(lineKey);
-                        this.pulsatingLines.push({
-                            line: lineKey,
-                            player: this.currentPlayer,
-                            time: Date.now()
-                        });
+                            if (!this.lines.has(lineKey)) {
+                                this.lines.add(lineKey);
+                                this.pulsatingLines.push({
+                                    line: lineKey,
+                                    player: this.currentPlayer,
+                                    time: Date.now()
+                                });
 
-                        const completedSquares = this.checkForSquares(lineKey);
+                                const completedSquares = this.checkForSquares(lineKey);
 
-                        if (completedSquares.length === 0) {
-                            this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                                if (completedSquares.length === 0) {
+                                    this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                                } else {
+                                    this.scores[this.currentPlayer] += completedSquares.length;
+                                    completedSquares.forEach(squareKey => {
+                                        this.triggerSquareAnimation(squareKey);
+                                    });
+                                }
+
+                                this.updateUI();
+
+                                if (this.isGameOver()) {
+                                    setTimeout(() => this.showWinner(), 1000);
+                                }
+                                
+                                // Clear selection after drawing line
+                                this.selectedDot = null;
+                                this.touchStartDot = null;
+                            }
                         } else {
-                            this.scores[this.currentPlayer] += completedSquares.length;
-                            completedSquares.forEach(squareKey => {
-                                this.triggerSquareAnimation(squareKey);
-                            });
+                            // Non-adjacent dot tapped - select the new dot
+                            this.selectedDot = endDot;
+                            this.touchStartDot = endDot;
                         }
-
-                        this.updateUI();
-
-                        if (this.isGameOver()) {
-                            setTimeout(() => this.showWinner(), 1000);
-                        }
+                    } else if (!this.selectedDot) {
+                        // No dot selected - select this one
+                        this.selectedDot = endDot;
+                        this.touchStartDot = endDot;
+                    } else {
+                        // Same dot tapped - deselect
+                        this.selectedDot = null;
+                        this.touchStartDot = null;
                     }
                 }
             }
@@ -467,8 +482,7 @@ class DotsAndBoxesGame {
             this.activeTouches.delete(touch.identifier);
         }
 
-        // Don't clear selected dot - allow two-tap interaction
-        // Only clear if a line was successfully drawn
+        // Redraw to show selection changes
         if (this.activeTouches.size === 0) {
             this.draw();
         }
