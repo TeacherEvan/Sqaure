@@ -1,4 +1,27 @@
 class DotsAndBoxesGame {
+    // Configuration constants
+    static DOT_RADIUS = 1.6;
+    static LINE_WIDTH = 6; // 300% increase from original 2
+    static CELL_SIZE_MIN = 8;
+    static CELL_SIZE_MAX = 40;
+    static GRID_OFFSET = 20;
+    
+    // Animation constants
+    static ANIMATION_SQUARE_DURATION = 600;
+    static ANIMATION_KISS_DURATION = 1000;
+    static ANIMATION_MULTIPLIER_DURATION = 2000;
+    static ANIMATION_TRUTHORDARE_DURATION = 2000;
+    static ANIMATION_PULSATING_DURATION = 2000;
+    
+    // Particle constants
+    static PARTICLE_COUNT_SQUARE = 15;
+    static PARTICLE_COUNT_MULTIPLIER_SPARKS = 30;
+    static PARTICLE_COUNT_MULTIPLIER_SMOKE = 10;
+    
+    // Kiss emoji constants
+    static KISS_EMOJI_MIN = 20;
+    static KISS_EMOJI_MAX = 35;
+    
     constructor(gridSize, player1Color, player2Color) {
         this.gridSize = gridSize;
         this.player1Color = player1Color;
@@ -9,8 +32,8 @@ class DotsAndBoxesGame {
         this.squares = {};
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.dotRadius = 1.6; // 5 times smaller than 8
-        this.lineWidth = 6; // 300% increase from original 2 for better visibility
+        this.dotRadius = DotsAndBoxesGame.DOT_RADIUS;
+        this.lineWidth = DotsAndBoxesGame.LINE_WIDTH;
         this.selectedDot = null;
         this.pulsatingLines = [];
         this.lineOwners = new Map(); // Track which player drew each line
@@ -92,9 +115,10 @@ class DotsAndBoxesGame {
         const cellSize = Math.min(cellSizeWidth, cellSizeHeight);
 
         // Allow smaller cell sizes now that dots are smaller
-        this.cellSize = Math.max(8, Math.min(cellSize, 40));
-        const logicalWidth = (this.gridCols - 1) * this.cellSize + 40;
-        const logicalHeight = (this.gridRows - 1) * this.cellSize + 40;
+        this.cellSize = Math.max(DotsAndBoxesGame.CELL_SIZE_MIN, 
+                                Math.min(cellSize, DotsAndBoxesGame.CELL_SIZE_MAX));
+        const logicalWidth = (this.gridCols - 1) * this.cellSize + DotsAndBoxesGame.GRID_OFFSET * 2;
+        const logicalHeight = (this.gridRows - 1) * this.cellSize + DotsAndBoxesGame.GRID_OFFSET * 2;
         
         // Store logical dimensions for use in draw() method
         this.logicalWidth = logicalWidth;
@@ -107,8 +131,8 @@ class DotsAndBoxesGame {
         this.canvas.style.width = logicalWidth + 'px';
         this.canvas.style.height = logicalHeight + 'px';
         
-        this.offsetX = 20;
-        this.offsetY = 20;
+        this.offsetX = DotsAndBoxesGame.GRID_OFFSET;
+        this.offsetY = DotsAndBoxesGame.GRID_OFFSET;
 
         // Remove old event listeners if they exist
         const oldCanvas = this.canvas;
@@ -279,6 +303,29 @@ class DotsAndBoxesGame {
             a.row === b.row ? a.col - b.col : a.row - b.row
         );
         return `${first.row},${first.col}-${second.row},${second.col}`;
+    }
+    
+    /**
+     * Parse a line key string into start and end dot objects
+     * @param {string} lineKey - Format: "row,col-row,col"
+     * @returns {Array} [startDot, endDot]
+     */
+    parseLineKey(lineKey) {
+        const [start, end] = lineKey.split('-').map(s => {
+            const [row, col] = s.split(',').map(Number);
+            return { row, col };
+        });
+        return [start, end];
+    }
+    
+    /**
+     * Parse a square key string into row and col
+     * @param {string} squareKey - Format: "row,col"
+     * @returns {Object} {row, col}
+     */
+    parseSquareKey(squareKey) {
+        const [row, col] = squareKey.split(',').map(Number);
+        return { row, col };
     }
 
     checkForSquares(lineKey) {
@@ -651,12 +698,13 @@ class DotsAndBoxesGame {
     }
 
     triggerSquareAnimation(squareKey) {
-        const [row, col] = squareKey.split(',').map(Number);
+        const { row, col } = this.parseSquareKey(squareKey);
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
         const centerY = this.offsetY + (row + 0.5) * this.cellSize;
 
         // Add MULTIPLE kiss emoji animations (dozens randomly placed)
-        const kissCount = 20 + Math.floor(Math.random() * 15); // 20-35 kisses
+        const kissCount = DotsAndBoxesGame.KISS_EMOJI_MIN + 
+                         Math.floor(Math.random() * (DotsAndBoxesGame.KISS_EMOJI_MAX - DotsAndBoxesGame.KISS_EMOJI_MIN));
         for (let i = 0; i < kissCount; i++) {
             // Random position within and around the square
             const offsetRange = this.cellSize * 2;
@@ -667,7 +715,7 @@ class DotsAndBoxesGame {
                 x: randomX,
                 y: randomY,
                 startTime: Date.now() + Math.random() * 200, // Stagger start times
-                duration: 1000 + Math.random() * 500, // Varied durations
+                duration: DotsAndBoxesGame.ANIMATION_KISS_DURATION + Math.random() * 500, // Varied durations
                 scale: 0.5 + Math.random() * 0.5 // Varied sizes
             });
         }
@@ -676,14 +724,14 @@ class DotsAndBoxesGame {
         this.squareAnimations.push({
             squareKey,
             startTime: Date.now(),
-            duration: 600,
+            duration: DotsAndBoxesGame.ANIMATION_SQUARE_DURATION,
             centerX,
             centerY
         });
 
         // Create particle burst (scaled down for smaller cells)
         const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
-        const particleCount = 15; // Reduced from 20
+        const particleCount = DotsAndBoxesGame.PARTICLE_COUNT_SQUARE;
 
         for (let i = 0; i < particleCount; i++) {
             const angle = (Math.PI * 2 * i) / particleCount;
@@ -703,7 +751,7 @@ class DotsAndBoxesGame {
     }
     
     triggerMultiplierAnimation(squareKey, multiplierValue) {
-        const [row, col] = squareKey.split(',').map(Number);
+        const { row, col } = this.parseSquareKey(squareKey);
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
         const centerY = this.offsetY + (row + 0.5) * this.cellSize;
         
@@ -713,13 +761,13 @@ class DotsAndBoxesGame {
             squareKey,
             value: multiplierValue,
             startTime: Date.now(),
-            duration: 2000,
+            duration: DotsAndBoxesGame.ANIMATION_MULTIPLIER_DURATION,
             centerX,
             centerY
         });
         
         // Create sparks effect
-        const sparkCount = 30;
+        const sparkCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SPARKS;
         for (let i = 0; i < sparkCount; i++) {
             const angle = (Math.PI * 2 * i) / sparkCount;
             const speed = 2 + Math.random() * 3;
@@ -738,7 +786,7 @@ class DotsAndBoxesGame {
         }
         
         // Create smoke effect
-        const smokeCount = 10;
+        const smokeCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SMOKE;
         for (let i = 0; i < smokeCount; i++) {
             this.particles.push({
                 x: centerX + (Math.random() - 0.5) * this.cellSize,
@@ -755,7 +803,7 @@ class DotsAndBoxesGame {
     }
     
     triggerTruthOrDareAnimation(squareKey) {
-        const [row, col] = squareKey.split(',').map(Number);
+        const { row, col } = this.parseSquareKey(squareKey);
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
         const centerY = this.offsetY + (row + 0.5) * this.cellSize;
         
@@ -764,7 +812,7 @@ class DotsAndBoxesGame {
         this.truthOrDareAnimations.push({
             squareKey,
             startTime: Date.now(),
-            duration: 2000,
+            duration: DotsAndBoxesGame.ANIMATION_TRUTHORDARE_DURATION,
             centerX,
             centerY
         });
@@ -808,10 +856,7 @@ class DotsAndBoxesGame {
 
         // Draw lines
         for (const lineKey of this.lines) {
-            const [start, end] = lineKey.split('-').map(s => {
-                const [row, col] = s.split(',').map(Number);
-                return { row, col };
-            });
+            const [start, end] = this.parseLineKey(lineKey);
 
             const pulsating = this.pulsatingLines.find(p => p.line === lineKey);
             const player = pulsating?.player || this.getLinePlayer(lineKey);
@@ -834,7 +879,7 @@ class DotsAndBoxesGame {
 
         // Draw completed squares
         for (const [squareKey, player] of Object.entries(this.squares)) {
-            const [row, col] = squareKey.split(',').map(Number);
+            const { row, col } = this.parseSquareKey(squareKey);
             const x = this.offsetX + col * this.cellSize;
             const y = this.offsetY + row * this.cellSize;
 
@@ -934,7 +979,7 @@ class DotsAndBoxesGame {
         for (const squareKey in this.squares) {
             const player = this.squares[squareKey];
             const color = player === 1 ? this.player1Color : this.player2Color;
-            const [row, col] = squareKey.split(',').map(Number);
+            const { row, col } = this.parseSquareKey(squareKey);
 
             const x = this.offsetX + col * this.cellSize;
             const y = this.offsetY + row * this.cellSize;
@@ -1154,7 +1199,7 @@ class DotsAndBoxesGame {
         // Clean up old animations
         const now = Date.now();
         this.pulsatingLines = this.pulsatingLines.filter(pulsating =>
-            now - pulsating.time < 2000
+            now - pulsating.time < DotsAndBoxesGame.ANIMATION_PULSATING_DURATION
         );
         this.squareAnimations = this.squareAnimations.filter(anim =>
             now - anim.startTime < anim.duration
