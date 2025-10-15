@@ -18,6 +18,11 @@ class DotsAndBoxesGame {
         this.activeTouches = new Map(); // Track multiple touches by identifier
         this.touchVisuals = []; // Visual feedback for touch points
         this.touchStartDot = null; // Track the dot where touch started
+        
+        // Selection persistence for problematic devices/extensions
+        this.lastInteractionTime = 0;
+        this.selectionLocked = false; // Prevent accidental deselection
+        this.lastTouchTime = 0; // Track touch events to prevent mouse event interference
 
         // Animation system for completed squares
         this.squareAnimations = []; // Active square animations
@@ -264,27 +269,50 @@ class DotsAndBoxesGame {
 
     handleClick(e) {
         // === MOUSE CLICK HANDLER ===
+        // Prevent mouse events that follow touch events (some devices fire both)
+        const now = Date.now();
+        if (now - this.lastTouchTime < 500) {
+            return; // Ignore mouse events shortly after touch
+        }
+        
+        // Prevent rapid duplicate events (common with Chrome extensions)
+        if (now - this.lastInteractionTime < 50) {
+            return; // Debounce rapid clicks
+        }
+        this.lastInteractionTime = now;
+
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
         const dot = this.getNearestDot(x, y);
-        if (!dot) return;
+        if (!dot) {
+            // Only deselect if clicking far from any dot
+            if (!this.selectionLocked) {
+                this.selectedDot = null;
+                this.draw();
+            }
+            return;
+        }
 
         if (!this.selectedDot) {
             // Select first dot
             this.selectedDot = dot;
+            this.selectionLocked = true; // Lock selection until action is taken
             this.draw();
         } else if (this.selectedDot.row === dot.row && this.selectedDot.col === dot.col) {
             // Clicked same dot - deselect
             this.selectedDot = null;
+            this.selectionLocked = false;
             this.draw();
         } else {
             if (this.areAdjacent(this.selectedDot, dot)) {
                 this.drawLine(this.selectedDot, dot);
+                this.selectionLocked = false; // Unlock after action
             } else {
                 // Clicked non-adjacent dot - select the new dot
                 this.selectedDot = dot;
+                this.selectionLocked = true;
             }
             
             this.draw();
@@ -320,13 +348,24 @@ class DotsAndBoxesGame {
             this.updateUI();
             this.checkGameOver();
             
-            // Clear selection after drawing line
+            // Clear selection and unlock after drawing line
             this.selectedDot = null;
+            this.selectionLocked = false;
         }
     }
 
     handleTouchStart(e) {
         e.preventDefault();
+
+        // Mark that we're handling touch events
+        this.lastTouchTime = Date.now();
+
+        // Debounce to prevent event conflicts with Chrome extensions
+        const now = Date.now();
+        if (now - this.lastInteractionTime < 50) {
+            return;
+        }
+        this.lastInteractionTime = now;
 
         // If zoomed in and two-finger touch, start panning
         if (e.touches.length === 2 && this.manualZoomLevel > 1) {
@@ -396,15 +435,23 @@ class DotsAndBoxesGame {
                 });
             }
 
-            // Update selected dot for last touch only
-            if (i === e.changedTouches.length - 1) {
-                this.updateSelectedDot(x, y);
-            }
+            // Do NOT update selected dot during move - only on touchend
+            // This prevents selection loss on devices with sensitive touch screens
         }
     }
 
     handleTouchEnd(e) {
         e.preventDefault();
+
+        // Mark touch interaction
+        this.lastTouchTime = Date.now();
+
+        // Debounce to prevent duplicate events
+        const now = Date.now();
+        if (now - this.lastInteractionTime < 50) {
+            return;
+        }
+        this.lastInteractionTime = now;
 
         // Reset panning if fingers lifted
         if (e.touches.length < 2) {
@@ -433,22 +480,23 @@ class DotsAndBoxesGame {
                         // Different dot selected - check if adjacent
                         if (this.areAdjacent(this.selectedDot, endDot)) {
                             this.drawLine(this.selectedDot, endDot);
-                            // Clear selection after drawing line
-                            this.selectedDot = null;
-                            this.touchStartDot = null;
+                            // Selection cleared and unlocked in drawLine()
                         } else {
                             // Non-adjacent dot tapped - select the new dot
                             this.selectedDot = endDot;
                             this.touchStartDot = endDot;
+                            this.selectionLocked = true;
                         }
                     } else if (!this.selectedDot) {
                         // No dot selected - select this one
                         this.selectedDot = endDot;
                         this.touchStartDot = endDot;
+                        this.selectionLocked = true;
                     } else {
                         // Same dot tapped - deselect
                         this.selectedDot = null;
                         this.touchStartDot = null;
+                        this.selectionLocked = false;
                     }
                 }
             }
@@ -615,6 +663,14 @@ class DotsAndBoxesGame {
             const y = this.offsetY + this.selectedDot.row * this.cellSize;
 
             const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
+            
+            // Extra outer glow for large displays (BenQ boards)
+            const glowPulse = 1 + Math.sin(Date.now() / 150) * 0.3;
+            this.ctx.strokeStyle = playerColor + '60'; // Semi-transparent
+            this.ctx.lineWidth = 5;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, (this.dotRadius + 12) * glowPulse, 0, Math.PI * 2);
+            this.ctx.stroke();
             
             // Outer pulsing ring
             const pulseScale = 1 + Math.sin(Date.now() / 200) * 0.2;
