@@ -60,10 +60,11 @@ Then visit `http://localhost:8000` in your browser.
 
 ## 📐 Grid Sizes
 
-The game offers three preset grid sizes that automatically adapt to your display:
+The game offers four preset grid sizes that automatically adapt to your display:
 
 | Selection | Square Mode | Landscape Mode* | Total Squares |
 |-----------|-------------|-----------------|---------------|
+| 5×5       | 5×5 grid    | ~7×4 grid       | 16 squares    |
 | 10×10     | 10×10 grid  | ~16×7 grid      | 81 squares    |
 | 20×20     | 20×20 grid  | ~33×14 grid     | 361 squares   |
 | 30×30     | 30×30 grid  | ~50×18 grid     | 841 squares   |
