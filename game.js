@@ -465,10 +465,10 @@ class DotsAndBoxesGame {
         
         if (multiplierData) {
             if (multiplierData.type === 'multiplier') {
-                // Apply multiplier to the score
+                // Apply multiplier to the score - MULTIPLY the score
                 const currentScore = this.scores[player];
                 const multiplierValue = multiplierData.value;
-                this.scores[player] = currentScore + (multiplierValue - 1); // Add bonus points
+                this.scores[player] = currentScore * multiplierValue;
                 
                 // Trigger special animation
                 this.triggerMultiplierAnimation(squareKey, multiplierValue);
