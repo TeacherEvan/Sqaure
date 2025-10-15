@@ -119,9 +119,6 @@ class DotsAndBoxesGame {
 
         // Add zoom control listeners
         this.setupZoomControls();
-
-        // Start animation loop
-        this.animate();
     }
 
     setupEventListeners() {
@@ -465,35 +462,6 @@ class DotsAndBoxesGame {
         }
     }
 
-    processTouchClick(x, y) {
-        const dot = this.getNearestDot(x, y);
-        if (!dot) return;
-
-        const distance = Math.sqrt(
-            Math.pow(x - (this.offsetX + dot.col * this.cellSize), 2) +
-            Math.pow(y - (this.offsetY + dot.row * this.cellSize), 2)
-        );
-
-        if (distance > this.cellSize * 0.3) return;
-
-        if (!this.selectedDot) {
-            // Select first dot
-            this.selectedDot = dot;
-        } else if (this.selectedDot.row === dot.row && this.selectedDot.col === dot.col) {
-            // Tapped same dot - deselect
-            this.selectedDot = null;
-        } else {
-            if (this.areAdjacent(this.selectedDot, dot)) {
-                this.drawLine(this.selectedDot, dot);
-            } else {
-                // Tapped non-adjacent dot - select the new dot
-                this.selectedDot = dot;
-            }
-        }
-
-        this.draw();
-    }
-
     updateSelectedDot(x, y) {
         const dot = this.getNearestDot(x, y);
         if (!dot) return;
@@ -810,6 +778,9 @@ class DotsAndBoxesGame {
 
         // Clean up old animations
         const now = Date.now();
+        this.pulsatingLines = this.pulsatingLines.filter(pulsating =>
+            now - pulsating.time < 2000
+        );
         this.squareAnimations = this.squareAnimations.filter(anim =>
             now - anim.startTime < anim.duration
         );
@@ -826,6 +797,7 @@ class DotsAndBoxesGame {
         // Redraw if animations are active or zooming
         if (this.particles.length > 0 || this.squareAnimations.length > 0 || 
             this.touchVisuals.length > 0 || this.kissEmojis.length > 0 ||
+            this.pulsatingLines.length > 0 ||
             Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || this.selectedDot) {
             this.draw();
         }

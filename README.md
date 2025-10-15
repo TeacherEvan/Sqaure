@@ -175,7 +175,7 @@ In `game.js` constructor:
 
 ```javascript
 this.dotRadius = 1.6;    // Dot size
-this.lineWidth = 1;      // Line thickness
+this.lineWidth = 2;      // Line thickness
 this.cellSize = 8-40;    // Cell size range (calculated)
 ```
 
