@@ -1,6 +1,7 @@
 # BenQ Board Chrome Extension Fix
 
 ## Problem Diagnosis
+
 The dot selection was not staying selected on the massive BenQ board with Chrome extension due to:
 
 1. **Event Interference**: Chrome extensions can inject event listeners that trigger additional events or prevent proper event propagation
@@ -11,6 +12,7 @@ The dot selection was not staying selected on the massive BenQ board with Chrome
 ## Solutions Implemented
 
 ### 1. Selection Locking Mechanism
+
 - Added `selectionLocked` flag that prevents accidental deselection
 - Lock is engaged when a dot is selected
 - Lock is released only when:
@@ -19,21 +21,25 @@ The dot selection was not staying selected on the massive BenQ board with Chrome
   - A new dot is selected
 
 ### 2. Event Debouncing
+
 - Added `lastInteractionTime` tracker with 50ms debounce threshold
 - Prevents rapid duplicate events from Chrome extensions
 - Applies to both mouse and touch events
 
 ### 3. Touch/Mouse Event Separation
+
 - Added `lastTouchTime` tracker
 - Mouse events are ignored for 500ms after touch events
 - Prevents devices that fire both event types from causing conflicts
 
 ### 4. Enhanced Touch Event Handling
-- Removed `updateSelectedDot()` call from `touchmove` event
-- Selection now only updates on `touchend` (tap completion)
+
+- Removed `updateSelectedDot()` call from touchmove event
+- Selection now only updates on touchend (tap completion)
 - Prevents selection loss during dragging or sensitive touch screens
 
 ### 5. Improved Visual Feedback
+
 - Added extra outer glow ring for better visibility on large displays
 - Triple-ring selection indicator:
   - Outer glow (pulsing, semi-transparent)
@@ -43,19 +49,22 @@ The dot selection was not staying selected on the massive BenQ board with Chrome
 - Faster pulse animation (150ms/200ms) for more noticeable feedback
 
 ### 6. Click-Away Protection
+
 - Clicking away from dots no longer deselects when selection is locked
 - Only clicking on the same dot or completing a line action releases the lock
 
 ## Code Changes Summary
 
-### New Properties Added:
+### New Properties Added
+
 ```javascript
 this.lastInteractionTime = 0;
 this.selectionLocked = false;
 this.lastTouchTime = 0;
 ```
 
-### Modified Methods:
+### Modified Methods
+
 1. `handleClick()` - Added debouncing, touch/mouse separation, and selection locking
 2. `handleTouchStart()` - Added touch time tracking and debouncing
 3. `handleTouchMove()` - Removed problematic selection updates during move
@@ -73,14 +82,16 @@ this.lastTouchTime = 0;
 
 ## Expected Behavior
 
-### Normal Flow:
+### Normal Flow
+
 1. User taps/clicks a dot → Dot becomes selected (locked)
 2. Dot remains selected even with accidental touches nearby
 3. User taps/clicks adjacent dot → Line is drawn, selection unlocks
 4. OR User taps/clicks same dot → Deselection, lock releases
 5. OR User taps/clicks non-adjacent dot → New dot selected, lock persists
 
-### Edge Cases Handled:
+### Edge Cases Handled
+
 - Rapid clicking/tapping → Debounced
 - Chrome extension events → Filtered
 - Touch + mouse events → Touch takes priority
@@ -88,9 +99,11 @@ this.lastTouchTime = 0;
 - Moving finger during selection → No interference
 
 ## Performance Impact
+
 Minimal - only adds simple timestamp comparisons and boolean flags. No additional loops or heavy computations.
 
 ## Backward Compatibility
-✅ All existing functionality preserved
-✅ Works on all previously supported devices
+
+✅ All existing functionality preserved  
+✅ Works on all previously supported devices  
 ✅ Enhanced behavior on problematic devices/configurations
