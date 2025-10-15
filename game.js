@@ -1,4 +1,27 @@
 class DotsAndBoxesGame {
+    // Configuration constants
+    static DOT_RADIUS = 1.6;
+    static LINE_WIDTH = 6; // 300% increase from original 2
+    static CELL_SIZE_MIN = 8;
+    static CELL_SIZE_MAX = 40;
+    static GRID_OFFSET = 20;
+    
+    // Animation constants
+    static ANIMATION_SQUARE_DURATION = 600;
+    static ANIMATION_KISS_DURATION = 1000;
+    static ANIMATION_MULTIPLIER_DURATION = 2000;
+    static ANIMATION_TRUTHORDARE_DURATION = 2000;
+    static ANIMATION_PULSATING_DURATION = 2000;
+    
+    // Particle constants
+    static PARTICLE_COUNT_SQUARE = 15;
+    static PARTICLE_COUNT_MULTIPLIER_SPARKS = 30;
+    static PARTICLE_COUNT_MULTIPLIER_SMOKE = 10;
+    
+    // Kiss emoji constants
+    static KISS_EMOJI_MIN = 20;
+    static KISS_EMOJI_MAX = 35;
+    
     constructor(gridSize, player1Color, player2Color) {
         this.gridSize = gridSize;
         this.player1Color = player1Color;
@@ -9,10 +32,11 @@ class DotsAndBoxesGame {
         this.squares = {};
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.dotRadius = 1.6; // 5 times smaller than 8
-        this.lineWidth = 2; // Doubled from 1 for better visibility
+        this.dotRadius = DotsAndBoxesGame.DOT_RADIUS;
+        this.lineWidth = DotsAndBoxesGame.LINE_WIDTH;
         this.selectedDot = null;
         this.pulsatingLines = [];
+        this.lineOwners = new Map(); // Track which player drew each line
 
         // Multi-touch support
         this.activeTouches = new Map(); // Track multiple touches by identifier
@@ -28,6 +52,14 @@ class DotsAndBoxesGame {
         this.squareAnimations = []; // Active square animations
         this.particles = []; // Particle effects for celebrations
         this.kissEmojis = []; // Kiss emoji animations for completed squares
+        
+        // Score multiplier system
+        this.squareMultipliers = {}; // Store multipliers for each square
+        this.revealedMultipliers = new Set(); // Track which squares have been clicked
+        
+        // Animated score counters
+        this.displayedScores = { 1: 0, 2: 0 }; // Scores currently displayed (animated)
+        this.scoreAnimationSpeed = 0.1; // How fast scores count up
 
         // Zoom state
         this.manualZoomLevel = 1; // User-selected zoom level (1, 2, 3, or 5)
@@ -39,6 +71,7 @@ class DotsAndBoxesGame {
         this.panStartY = 0;
 
         this.setupCanvas();
+        this.initializeMultipliers(); // Initialize multipliers AFTER grid dimensions are set
         this.setupEventListeners();
         this.draw();
         this.updateUI();
@@ -82,11 +115,10 @@ class DotsAndBoxesGame {
         const cellSize = Math.min(cellSizeWidth, cellSizeHeight);
 
         // Allow smaller cell sizes now that dots are smaller
-        this.cellSize = Math.max(8, Math.min(cellSize, 40));
-
-        // Store logical dimensions
-        const logicalWidth = (this.gridCols - 1) * this.cellSize + 40;
-        const logicalHeight = (this.gridRows - 1) * this.cellSize + 40;
+        this.cellSize = Math.max(DotsAndBoxesGame.CELL_SIZE_MIN, 
+                                Math.min(cellSize, DotsAndBoxesGame.CELL_SIZE_MAX));
+        const logicalWidth = (this.gridCols - 1) * this.cellSize + DotsAndBoxesGame.GRID_OFFSET * 2;
+        const logicalHeight = (this.gridRows - 1) * this.cellSize + DotsAndBoxesGame.GRID_OFFSET * 2;
         
         // Store logical dimensions for use in draw() method
         this.logicalWidth = logicalWidth;
@@ -99,8 +131,8 @@ class DotsAndBoxesGame {
         this.canvas.style.width = logicalWidth + 'px';
         this.canvas.style.height = logicalHeight + 'px';
         
-        this.offsetX = 20;
-        this.offsetY = 20;
+        this.offsetX = DotsAndBoxesGame.GRID_OFFSET;
+        this.offsetY = DotsAndBoxesGame.GRID_OFFSET;
 
         // Remove old event listeners if they exist
         const oldCanvas = this.canvas;
@@ -124,6 +156,71 @@ class DotsAndBoxesGame {
 
         // Add zoom control listeners
         this.setupZoomControls();
+    }
+
+    initializeMultipliers() {
+        // Calculate total number of squares
+        const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
+        
+        // Create array of all square keys
+        const allSquareKeys = [];
+        for (let row = 0; row < this.gridRows - 1; row++) {
+            for (let col = 0; col < this.gridCols - 1; col++) {
+                allSquareKeys.push(`${row},${col}`);
+            }
+        }
+        
+        // Shuffle array for random distribution
+        for (let i = allSquareKeys.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allSquareKeys[i], allSquareKeys[j]] = [allSquareKeys[j], allSquareKeys[i]];
+        }
+        
+        // Calculate counts for each multiplier type
+        const counts = {
+            'x2': Math.floor(totalSquares * 0.60),
+            'x3': Math.floor(totalSquares * 0.20),
+            'x4': Math.floor(totalSquares * 0.10),
+            'x5': Math.floor(totalSquares * 0.05),
+            'x10': Math.max(1, Math.floor(totalSquares * 0.01))
+        };
+        
+        // The remaining squares get "Truth or Dare"
+        const multiplierTotal = counts.x2 + counts.x3 + counts.x4 + counts.x5 + counts.x10;
+        
+        let index = 0;
+        
+        // Assign multipliers
+        for (let i = 0; i < counts.x2; i++) {
+            if (index < allSquareKeys.length) {
+                this.squareMultipliers[allSquareKeys[index++]] = { type: 'multiplier', value: 2 };
+            }
+        }
+        for (let i = 0; i < counts.x3; i++) {
+            if (index < allSquareKeys.length) {
+                this.squareMultipliers[allSquareKeys[index++]] = { type: 'multiplier', value: 3 };
+            }
+        }
+        for (let i = 0; i < counts.x4; i++) {
+            if (index < allSquareKeys.length) {
+                this.squareMultipliers[allSquareKeys[index++]] = { type: 'multiplier', value: 4 };
+            }
+        }
+        for (let i = 0; i < counts.x5; i++) {
+            if (index < allSquareKeys.length) {
+                this.squareMultipliers[allSquareKeys[index++]] = { type: 'multiplier', value: 5 };
+            }
+        }
+        for (let i = 0; i < counts.x10; i++) {
+            if (index < allSquareKeys.length) {
+                this.squareMultipliers[allSquareKeys[index++]] = { type: 'multiplier', value: 10 };
+            }
+        }
+        
+        // Assign "Truth or Dare" to remaining squares
+        while (index < allSquareKeys.length) {
+            this.squareMultipliers[allSquareKeys[index++]] = { type: 'truthOrDare' };
+        }
     }
 
     setupEventListeners() {
@@ -207,6 +304,29 @@ class DotsAndBoxesGame {
         );
         return `${first.row},${first.col}-${second.row},${second.col}`;
     }
+    
+    /**
+     * Parse a line key string into start and end dot objects
+     * @param {string} lineKey - Format: "row,col-row,col"
+     * @returns {Array} [startDot, endDot]
+     */
+    parseLineKey(lineKey) {
+        const [start, end] = lineKey.split('-').map(s => {
+            const [row, col] = s.split(',').map(Number);
+            return { row, col };
+        });
+        return [start, end];
+    }
+    
+    /**
+     * Parse a square key string into row and col
+     * @param {string} squareKey - Format: "row,col"
+     * @returns {Object} {row, col}
+     */
+    parseSquareKey(squareKey) {
+        const [row, col] = squareKey.split(',').map(Number);
+        return { row, col };
+    }
 
     checkForSquares(lineKey) {
         const [start, end] = lineKey.split('-').map(s => {
@@ -284,6 +404,13 @@ class DotsAndBoxesGame {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+        
+        // Check if clicking on a completed square to reveal multiplier
+        const clickedSquare = this.getSquareAtPosition(x, y);
+        if (clickedSquare && this.squares[clickedSquare] && !this.revealedMultipliers.has(clickedSquare)) {
+            this.revealMultiplier(clickedSquare);
+            return;
+        }
 
         const dot = this.getNearestDot(x, y);
         if (!dot) {
@@ -318,6 +445,42 @@ class DotsAndBoxesGame {
             this.draw();
         }
     }
+    
+    getSquareAtPosition(x, y) {
+        // Convert screen coordinates to grid coordinates
+        const col = Math.floor((x - this.offsetX) / this.cellSize);
+        const row = Math.floor((y - this.offsetY) / this.cellSize);
+        
+        if (row >= 0 && row < this.gridRows - 1 && col >= 0 && col < this.gridCols - 1) {
+            const squareKey = `${row},${col}`;
+            return squareKey;
+        }
+        return null;
+    }
+    
+    revealMultiplier(squareKey) {
+        this.revealedMultipliers.add(squareKey);
+        const multiplierData = this.squareMultipliers[squareKey];
+        const player = this.squares[squareKey];
+        
+        if (multiplierData) {
+            if (multiplierData.type === 'multiplier') {
+                // Apply multiplier to the score - MULTIPLY the score
+                const currentScore = this.scores[player];
+                const multiplierValue = multiplierData.value;
+                this.scores[player] = currentScore * multiplierValue;
+                
+                // Trigger special animation
+                this.triggerMultiplierAnimation(squareKey, multiplierValue);
+            } else if (multiplierData.type === 'truthOrDare') {
+                // Trigger Truth or Dare animation
+                this.triggerTruthOrDareAnimation(squareKey);
+            }
+            
+            this.updateUI();
+        }
+        this.draw();
+    }
 
     /**
      * Consolidated method for drawing a line between two dots
@@ -328,6 +491,7 @@ class DotsAndBoxesGame {
 
         if (!this.lines.has(lineKey)) {
             this.lines.add(lineKey);
+            this.lineOwners.set(lineKey, this.currentPlayer); // Store line ownership permanently
             this.pulsatingLines.push({
                 line: lineKey,
                 player: this.currentPlayer,
@@ -464,6 +628,14 @@ class DotsAndBoxesGame {
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
 
+            // Check if tapping on a completed square to reveal multiplier
+            const clickedSquare = this.getSquareAtPosition(x, y);
+            if (clickedSquare && this.squares[clickedSquare] && !this.revealedMultipliers.has(clickedSquare)) {
+                this.revealMultiplier(clickedSquare);
+                this.activeTouches.delete(touch.identifier);
+                continue;
+            }
+
             // Get the dot at the touch end position
             const endDot = this.getNearestDot(x, y);
             
@@ -526,30 +698,40 @@ class DotsAndBoxesGame {
     }
 
     triggerSquareAnimation(squareKey) {
-        const [row, col] = squareKey.split(',').map(Number);
+        const { row, col } = this.parseSquareKey(squareKey);
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
         const centerY = this.offsetY + (row + 0.5) * this.cellSize;
 
-        // Add kiss emoji animation
-        this.kissEmojis.push({
-            x: centerX,
-            y: centerY,
-            startTime: Date.now(),
-            duration: 1000 // 1 second as specified
-        });
+        // Add MULTIPLE kiss emoji animations (dozens randomly placed)
+        const kissCount = DotsAndBoxesGame.KISS_EMOJI_MIN + 
+                         Math.floor(Math.random() * (DotsAndBoxesGame.KISS_EMOJI_MAX - DotsAndBoxesGame.KISS_EMOJI_MIN));
+        for (let i = 0; i < kissCount; i++) {
+            // Random position within and around the square
+            const offsetRange = this.cellSize * 2;
+            const randomX = centerX + (Math.random() - 0.5) * offsetRange;
+            const randomY = centerY + (Math.random() - 0.5) * offsetRange;
+            
+            this.kissEmojis.push({
+                x: randomX,
+                y: randomY,
+                startTime: Date.now() + Math.random() * 200, // Stagger start times
+                duration: DotsAndBoxesGame.ANIMATION_KISS_DURATION + Math.random() * 500, // Varied durations
+                scale: 0.5 + Math.random() * 0.5 // Varied sizes
+            });
+        }
 
         // Add square scale animation
         this.squareAnimations.push({
             squareKey,
             startTime: Date.now(),
-            duration: 600,
+            duration: DotsAndBoxesGame.ANIMATION_SQUARE_DURATION,
             centerX,
             centerY
         });
 
         // Create particle burst (scaled down for smaller cells)
         const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
-        const particleCount = 15; // Reduced from 20
+        const particleCount = DotsAndBoxesGame.PARTICLE_COUNT_SQUARE;
 
         for (let i = 0; i < particleCount; i++) {
             const angle = (Math.PI * 2 * i) / particleCount;
@@ -566,6 +748,74 @@ class DotsAndBoxesGame {
                 decay: 0.015 + Math.random() * 0.01
             });
         }
+    }
+    
+    triggerMultiplierAnimation(squareKey, multiplierValue) {
+        const { row, col } = this.parseSquareKey(squareKey);
+        const centerX = this.offsetX + (col + 0.5) * this.cellSize;
+        const centerY = this.offsetY + (row + 0.5) * this.cellSize;
+        
+        // Add multiplier text animation with sparks and smoke
+        this.multiplierAnimations = this.multiplierAnimations || [];
+        this.multiplierAnimations.push({
+            squareKey,
+            value: multiplierValue,
+            startTime: Date.now(),
+            duration: DotsAndBoxesGame.ANIMATION_MULTIPLIER_DURATION,
+            centerX,
+            centerY
+        });
+        
+        // Create sparks effect
+        const sparkCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SPARKS;
+        for (let i = 0; i < sparkCount; i++) {
+            const angle = (Math.PI * 2 * i) / sparkCount;
+            const speed = 2 + Math.random() * 3;
+            
+            this.particles.push({
+                x: centerX,
+                y: centerY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1, // Slight upward bias
+                color: '#FFD700', // Gold color for multipliers
+                size: 2 + Math.random() * 3,
+                life: 1.0,
+                decay: 0.01 + Math.random() * 0.01,
+                spark: true
+            });
+        }
+        
+        // Create smoke effect
+        const smokeCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SMOKE;
+        for (let i = 0; i < smokeCount; i++) {
+            this.particles.push({
+                x: centerX + (Math.random() - 0.5) * this.cellSize,
+                y: centerY,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: -1 - Math.random() * 1.5,
+                color: '#888888',
+                size: 5 + Math.random() * 5,
+                life: 1.0,
+                decay: 0.008,
+                smoke: true
+            });
+        }
+    }
+    
+    triggerTruthOrDareAnimation(squareKey) {
+        const { row, col } = this.parseSquareKey(squareKey);
+        const centerX = this.offsetX + (col + 0.5) * this.cellSize;
+        const centerY = this.offsetY + (row + 0.5) * this.cellSize;
+        
+        // Add Truth or Dare card animation
+        this.truthOrDareAnimations = this.truthOrDareAnimations || [];
+        this.truthOrDareAnimations.push({
+            squareKey,
+            startTime: Date.now(),
+            duration: DotsAndBoxesGame.ANIMATION_TRUTHORDARE_DURATION,
+            centerX,
+            centerY
+        });
     }
 
     draw() {
@@ -606,10 +856,7 @@ class DotsAndBoxesGame {
 
         // Draw lines
         for (const lineKey of this.lines) {
-            const [start, end] = lineKey.split('-').map(s => {
-                const [row, col] = s.split(',').map(Number);
-                return { row, col };
-            });
+            const [start, end] = this.parseLineKey(lineKey);
 
             const pulsating = this.pulsatingLines.find(p => p.line === lineKey);
             const player = pulsating?.player || this.getLinePlayer(lineKey);
@@ -632,7 +879,7 @@ class DotsAndBoxesGame {
 
         // Draw completed squares
         for (const [squareKey, player] of Object.entries(this.squares)) {
-            const [row, col] = squareKey.split(',').map(Number);
+            const { row, col } = this.parseSquareKey(squareKey);
             const x = this.offsetX + col * this.cellSize;
             const y = this.offsetY + row * this.cellSize;
 
@@ -656,6 +903,12 @@ class DotsAndBoxesGame {
 
         // Draw kiss emojis
         this.drawKissEmojis();
+        
+        // Draw multiplier animations
+        this.drawMultiplierAnimations();
+        
+        // Draw truth or dare animations
+        this.drawTruthOrDareAnimations();
 
         // Draw selected dot with enhanced visibility
         if (this.selectedDot) {
@@ -726,7 +979,7 @@ class DotsAndBoxesGame {
         for (const squareKey in this.squares) {
             const player = this.squares[squareKey];
             const color = player === 1 ? this.player1Color : this.player2Color;
-            const [row, col] = squareKey.split(',').map(Number);
+            const { row, col } = this.parseSquareKey(squareKey);
 
             const x = this.offsetX + col * this.cellSize;
             const y = this.offsetY + row * this.cellSize;
@@ -771,15 +1024,50 @@ class DotsAndBoxesGame {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(player, x + this.cellSize / 2, y + this.cellSize / 2);
+            
+            // Draw multiplier or truth/dare indicator if revealed
+            if (this.revealedMultipliers.has(squareKey)) {
+                const multiplierData = this.squareMultipliers[squareKey];
+                if (multiplierData) {
+                    this.ctx.font = `bold ${this.cellSize * 0.25}px Arial`;
+                    this.ctx.fillStyle = '#FFD700';
+                    
+                    if (multiplierData.type === 'multiplier') {
+                        this.ctx.fillText(`x${multiplierData.value}`, x + this.cellSize / 2, y + this.cellSize * 0.75);
+                    } else if (multiplierData.type === 'truthOrDare') {
+                        this.ctx.fillStyle = '#FF1493';
+                        this.ctx.font = `bold ${this.cellSize * 0.2}px Arial`;
+                        this.ctx.fillText('T/D', x + this.cellSize / 2, y + this.cellSize * 0.75);
+                    }
+                }
+            }
         }
     }
 
     drawParticles() {
         this.particles.forEach(p => {
-            this.ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            this.ctx.fill();
+            if (p.spark) {
+                // Draw sparks with glow effect
+                this.ctx.shadowColor = p.color;
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+            } else if (p.smoke) {
+                // Draw smoke with transparency
+                this.ctx.fillStyle = p.color + Math.floor(p.life * 128).toString(16).padStart(2, '0');
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size * (1.5 - p.life * 0.5), 0, Math.PI * 2);
+                this.ctx.fill();
+            } else {
+                // Regular particles
+                this.ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
         });
     }
 
@@ -788,38 +1076,114 @@ class DotsAndBoxesGame {
         
         this.kissEmojis.forEach(kiss => {
             const age = now - kiss.startTime;
+            if (age < 0) return; // Not started yet (staggered)
+            
             const progress = age / kiss.duration;
             
             if (progress >= 1) return;
             
             // Ease-out for scale (grow then shrink slightly)
             const scaleProgress = progress < 0.5 ? progress * 2 : 1;
-            const scale = 0.5 + scaleProgress * 1.5;
+            const scale = (kiss.scale || 1) * (0.5 + scaleProgress * 1.5);
             
             // Fade out in second half
             const alpha = progress < 0.5 ? 1 : 1 - ((progress - 0.5) * 2);
             
-            // Move upward slightly
+            // Move upward and sideways slightly for variety
             const yOffset = progress * -20;
+            const xOffset = Math.sin(progress * Math.PI * 2) * 10;
             
             this.ctx.save();
             this.ctx.globalAlpha = alpha;
             this.ctx.font = `${this.cellSize * scale}px Arial`;
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('💋', kiss.x, kiss.y + yOffset);
+            this.ctx.fillText('💋', kiss.x + xOffset, kiss.y + yOffset);
+            this.ctx.restore();
+        });
+    }
+    
+    drawMultiplierAnimations() {
+        if (!this.multiplierAnimations) return;
+        
+        const now = Date.now();
+        this.multiplierAnimations.forEach(anim => {
+            const age = now - anim.startTime;
+            const progress = age / anim.duration;
+            
+            if (progress >= 1) return;
+            
+            // Scale up and fade out
+            const scale = 1 + progress * 2;
+            const alpha = 1 - progress;
+            
+            // Upward movement
+            const yOffset = -progress * 50;
+            
+            this.ctx.save();
+            this.ctx.globalAlpha = alpha;
+            
+            // Draw multiplier text with glow
+            this.ctx.shadowColor = '#FFD700';
+            this.ctx.shadowBlur = 20;
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.font = `bold ${this.cellSize * scale}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(`x${anim.value}`, anim.centerX, anim.centerY + yOffset);
+            
+            this.ctx.shadowBlur = 0;
+            this.ctx.restore();
+        });
+    }
+    
+    drawTruthOrDareAnimations() {
+        if (!this.truthOrDareAnimations) return;
+        
+        const now = Date.now();
+        this.truthOrDareAnimations.forEach(anim => {
+            const age = now - anim.startTime;
+            const progress = age / anim.duration;
+            
+            if (progress >= 1) return;
+            
+            // Flip animation
+            const flipProgress = Math.sin(progress * Math.PI * 2) * 0.5 + 0.5;
+            const scale = 0.5 + flipProgress * 0.5;
+            const alpha = 1 - progress;
+            
+            this.ctx.save();
+            this.ctx.globalAlpha = alpha;
+            
+            // Draw card background
+            this.ctx.fillStyle = '#FF1493';
+            this.ctx.strokeStyle = '#FFFFFF';
+            this.ctx.lineWidth = 2;
+            
+            const cardWidth = this.cellSize * scale;
+            const cardHeight = this.cellSize * scale * 1.4;
+            const x = anim.centerX - cardWidth / 2;
+            const y = anim.centerY - cardHeight / 2;
+            
+            this.ctx.fillRect(x, y, cardWidth, cardHeight);
+            this.ctx.strokeRect(x, y, cardWidth, cardHeight);
+            
+            // Draw text
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.font = `bold ${this.cellSize * scale * 0.3}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('Truth', anim.centerX, anim.centerY - this.cellSize * scale * 0.2);
+            this.ctx.fillText('or', anim.centerX, anim.centerY);
+            this.ctx.fillText('Dare', anim.centerX, anim.centerY + this.cellSize * scale * 0.2);
+            
             this.ctx.restore();
         });
     }
 
     getLinePlayer(lineKey) {
-        // Determine which player drew the line based on when it was added
-        for (const pulsating of this.pulsatingLines) {
-            if (pulsating.line === lineKey) {
-                return pulsating.player;
-            }
-        }
-        return 1; // Default
+        // Use stored line ownership for persistent color
+        return this.lineOwners.get(lineKey) || 1;
     }
 
     animate() {
@@ -835,7 +1199,7 @@ class DotsAndBoxesGame {
         // Clean up old animations
         const now = Date.now();
         this.pulsatingLines = this.pulsatingLines.filter(pulsating =>
-            now - pulsating.time < 2000
+            now - pulsating.time < DotsAndBoxesGame.ANIMATION_PULSATING_DURATION
         );
         this.squareAnimations = this.squareAnimations.filter(anim =>
             now - anim.startTime < anim.duration
@@ -846,14 +1210,31 @@ class DotsAndBoxesGame {
         this.kissEmojis = this.kissEmojis.filter(kiss =>
             now - kiss.startTime < kiss.duration
         );
+        
+        // Clean up multiplier and truth or dare animations
+        if (this.multiplierAnimations) {
+            this.multiplierAnimations = this.multiplierAnimations.filter(anim =>
+                now - anim.startTime < anim.duration
+            );
+        }
+        if (this.truthOrDareAnimations) {
+            this.truthOrDareAnimations = this.truthOrDareAnimations.filter(anim =>
+                now - anim.startTime < anim.duration
+            );
+        }
 
         // Update zoom smoothly
         this.zoomLevel += (this.manualZoomLevel - this.zoomLevel) * 0.15;
+        
+        // Update UI continuously for score animation
+        this.updateUI();
 
         // Redraw if animations are active or zooming
         if (this.particles.length > 0 || this.squareAnimations.length > 0 || 
             this.touchVisuals.length > 0 || this.kissEmojis.length > 0 ||
             this.pulsatingLines.length > 0 ||
+            (this.multiplierAnimations && this.multiplierAnimations.length > 0) ||
+            (this.truthOrDareAnimations && this.truthOrDareAnimations.length > 0) ||
             Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || this.selectedDot) {
             this.draw();
         }
@@ -862,8 +1243,24 @@ class DotsAndBoxesGame {
     }
 
     updateUI() {
-        document.getElementById('player1Score').textContent = this.scores[1];
-        document.getElementById('player2Score').textContent = this.scores[2];
+        // Animate score counting
+        const player1ScoreDiff = this.scores[1] - this.displayedScores[1];
+        const player2ScoreDiff = this.scores[2] - this.displayedScores[2];
+        
+        if (Math.abs(player1ScoreDiff) > 0.1) {
+            this.displayedScores[1] += player1ScoreDiff * this.scoreAnimationSpeed;
+        } else {
+            this.displayedScores[1] = this.scores[1];
+        }
+        
+        if (Math.abs(player2ScoreDiff) > 0.1) {
+            this.displayedScores[2] += player2ScoreDiff * this.scoreAnimationSpeed;
+        } else {
+            this.displayedScores[2] = this.scores[2];
+        }
+        
+        document.getElementById('player1Score').textContent = Math.floor(this.displayedScores[1]);
+        document.getElementById('player2Score').textContent = Math.floor(this.displayedScores[2]);
 
         document.getElementById('player1Info').classList.toggle('active', this.currentPlayer === 1);
         document.getElementById('player2Info').classList.toggle('active', this.currentPlayer === 2);
