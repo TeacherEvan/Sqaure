@@ -259,19 +259,9 @@ let welcomeAnimation = null;
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         welcomeAnimation = new WelcomeAnimation();
-        triggerFullscreenOnLoad();
     });
 } else {
     welcomeAnimation = new WelcomeAnimation();
-    triggerFullscreenOnLoad();
-}
-
-// Trigger fullscreen as soon as page loads
-function triggerFullscreenOnLoad() {
-    // Small delay to ensure DOM is ready and user interaction is detected
-    setTimeout(() => {
-        requestFullscreen();
-    }, 100);
 }
 
 // Centralized fullscreen request function
@@ -304,6 +294,7 @@ function exitFullscreen() {
 }
 
 let selectedGridSize = null;
+let fullscreenTriggered = false;
 
 // Grid size selection
 document.querySelectorAll('.grid-btn').forEach(btn => {
@@ -312,6 +303,12 @@ document.querySelectorAll('.grid-btn').forEach(btn => {
         btn.classList.add('selected');
         selectedGridSize = parseInt(btn.dataset.size);
         document.getElementById('startGame').disabled = false;
+        
+        // Trigger fullscreen on first user interaction
+        if (!fullscreenTriggered) {
+            fullscreenTriggered = true;
+            requestFullscreen();
+        }
     });
 });
 
