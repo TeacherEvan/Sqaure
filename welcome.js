@@ -1,6 +1,10 @@
 'use strict';
 
-// Welcome Screen Background Animation
+/**
+ * Welcome Screen Background Animation
+ * Implements flocking behavior (boids algorithm) with spatial partitioning for performance
+ */
+
 class WelcomeAnimation {
     constructor() {
         this.canvas = document.getElementById('welcomeCanvas');

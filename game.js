@@ -265,11 +265,8 @@ class DotsAndBoxesGame {
             !this.squares[`${row},${col}`];
     }
 
-    isAdjacent(dot1, dot2) {
-        return this.areAdjacent(dot1, dot2);
-    }
-
     handleClick(e) {
+        // === MOUSE CLICK HANDLER ===
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -287,40 +284,47 @@ class DotsAndBoxesGame {
             this.draw();
         } else {
             if (this.areAdjacent(this.selectedDot, dot)) {
-                const lineKey = this.getLineKey(this.selectedDot, dot);
-
-                if (!this.lines.has(lineKey)) {
-                    this.lines.add(lineKey);
-                    this.pulsatingLines.push({
-                        line: lineKey,
-                        player: this.currentPlayer,
-                        time: Date.now()
-                    });
-
-                    const completedSquares = this.checkForSquares(lineKey);
-
-                    if (completedSquares.length === 0) {
-                        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                    } else {
-                        this.scores[this.currentPlayer] += completedSquares.length;
-                        // Trigger animations for completed squares
-                        completedSquares.forEach(squareKey => {
-                            this.triggerSquareAnimation(squareKey);
-                        });
-                    }
-
-                    this.updateUI();
-                    this.checkGameOver();
-                    
-                    // Clear selection after drawing line
-                    this.selectedDot = null;
-                }
+                this.drawLine(this.selectedDot, dot);
             } else {
                 // Clicked non-adjacent dot - select the new dot
                 this.selectedDot = dot;
             }
             
             this.draw();
+        }
+    }
+
+    /**
+     * Consolidated method for drawing a line between two dots
+     * Handles score updates, animations, and turn switching
+     */
+    drawLine(dot1, dot2) {
+        const lineKey = this.getLineKey(dot1, dot2);
+
+        if (!this.lines.has(lineKey)) {
+            this.lines.add(lineKey);
+            this.pulsatingLines.push({
+                line: lineKey,
+                player: this.currentPlayer,
+                time: Date.now()
+            });
+
+            const completedSquares = this.checkForSquares(lineKey);
+
+            if (completedSquares.length === 0) {
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+            } else {
+                this.scores[this.currentPlayer] += completedSquares.length;
+                completedSquares.forEach(squareKey => {
+                    this.triggerSquareAnimation(squareKey);
+                });
+            }
+
+            this.updateUI();
+            this.checkGameOver();
+            
+            // Clear selection after drawing line
+            this.selectedDot = null;
         }
     }
 
@@ -430,38 +434,11 @@ class DotsAndBoxesGame {
                     // Check for two-tap interaction to draw a line
                     if (this.selectedDot && (this.selectedDot.row !== endDot.row || this.selectedDot.col !== endDot.col)) {
                         // Different dot selected - check if adjacent
-                        if (this.isAdjacent(this.selectedDot, endDot)) {
-                            const lineKey = this.getLineKey(this.selectedDot, endDot);
-
-                            if (!this.lines.has(lineKey)) {
-                                this.lines.add(lineKey);
-                                this.pulsatingLines.push({
-                                    line: lineKey,
-                                    player: this.currentPlayer,
-                                    time: Date.now()
-                                });
-
-                                const completedSquares = this.checkForSquares(lineKey);
-
-                                if (completedSquares.length === 0) {
-                                    this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                                } else {
-                                    this.scores[this.currentPlayer] += completedSquares.length;
-                                    completedSquares.forEach(squareKey => {
-                                        this.triggerSquareAnimation(squareKey);
-                                    });
-                                }
-
-                                this.updateUI();
-
-                                if (this.isGameOver()) {
-                                    setTimeout(() => this.showWinner(), 1000);
-                                }
-                                
-                                // Clear selection after drawing line
-                                this.selectedDot = null;
-                                this.touchStartDot = null;
-                            }
+                        if (this.areAdjacent(this.selectedDot, endDot)) {
+                            this.drawLine(this.selectedDot, endDot);
+                            // Clear selection after drawing line
+                            this.selectedDot = null;
+                            this.touchStartDot = null;
                         } else {
                             // Non-adjacent dot tapped - select the new dot
                             this.selectedDot = endDot;
@@ -506,35 +483,8 @@ class DotsAndBoxesGame {
             // Tapped same dot - deselect
             this.selectedDot = null;
         } else {
-            if (this.isAdjacent(this.selectedDot, dot)) {
-                const lineKey = this.getLineKey(this.selectedDot, dot);
-
-                if (!this.lines.has(lineKey)) {
-                    this.lines.add(lineKey);
-                    this.pulsatingLines.push({ lineKey, timestamp: Date.now() });
-
-                    const completedSquares = this.checkForSquares(lineKey);
-
-                    if (completedSquares.length > 0) {
-                        // Trigger animations for completed squares
-                        completedSquares.forEach(squareKey => {
-                            this.triggerSquareAnimation(squareKey);
-                        });
-
-                        this.scores[this.currentPlayer] += completedSquares.length;
-                    } else {
-                        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                    }
-
-                    this.updateUI();
-
-                    if (this.isGameOver()) {
-                        setTimeout(() => this.showWinner(), 1000);
-                    }
-                    
-                    // Clear selection after drawing line
-                    this.selectedDot = null;
-                }
+            if (this.areAdjacent(this.selectedDot, dot)) {
+                this.drawLine(this.selectedDot, dot);
             } else {
                 // Tapped non-adjacent dot - select the new dot
                 this.selectedDot = dot;

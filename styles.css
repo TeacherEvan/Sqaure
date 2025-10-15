@@ -490,31 +490,21 @@ canvas {
     display: block;
     cursor: pointer;
     touch-action: none;
-    /* Prevent browser touch gestures */
     -webkit-touch-callout: none;
-    /* Prevent callout on long-press */
     -webkit-user-select: none;
-    /* Prevent text selection */
     user-select: none;
 }
 
 /* Enhanced pulsing animation for active player */
 @keyframes pulse {
-
-    0%,
-    100% {
+    0%, 100% {
         transform: scale(1);
         box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
     }
-
     50% {
         transform: scale(1.05);
         box-shadow: 0 0 20px 10px rgba(255, 255, 255, 0);
     }
-}
-
-.player-info.active {
-    animation: pulse 1.5s ease-in-out infinite;
 }
 
 /* Add celebration animation class */
@@ -522,18 +512,19 @@ canvas {
     0% {
         transform: scale(1) rotate(0deg);
     }
-
     25% {
         transform: scale(1.1) rotate(-5deg);
     }
-
     75% {
         transform: scale(1.1) rotate(5deg);
     }
-
     100% {
         transform: scale(1) rotate(0deg);
     }
+}
+
+.player-info.active {
+    animation: pulse 1.5s ease-in-out infinite;
 }
 
 .player-info.scored {
