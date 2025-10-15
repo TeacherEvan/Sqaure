@@ -33,7 +33,6 @@ class DotsAndBoxesGame {
         // Score multiplier system
         this.squareMultipliers = {}; // Store multipliers for each square
         this.revealedMultipliers = new Set(); // Track which squares have been clicked
-        this.initializeMultipliers(); // Initialize multipliers for all squares
         
         // Animated score counters
         this.displayedScores = { 1: 0, 2: 0 }; // Scores currently displayed (animated)
@@ -49,6 +48,7 @@ class DotsAndBoxesGame {
         this.panStartY = 0;
 
         this.setupCanvas();
+        this.initializeMultipliers(); // Initialize multipliers AFTER grid dimensions are set
         this.setupEventListeners();
         this.draw();
         this.updateUI();
