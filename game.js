@@ -242,6 +242,15 @@ class DotsAndBoxesGame {
                 e.target.classList.add('active');
             });
         });
+        
+        // Setup populate button
+        const populateBtn = document.getElementById('populateBtn');
+        if (populateBtn) {
+            populateBtn.addEventListener('click', () => this.handlePopulate());
+        }
+        
+        // Initial check for populate button visibility
+        this.updatePopulateButtonVisibility();
     }
 
     setZoomLevel(level) {
@@ -511,6 +520,9 @@ class DotsAndBoxesGame {
 
             this.updateUI();
             this.checkGameOver();
+            
+            // Update populate button visibility
+            this.updatePopulateButtonVisibility();
             
             // Clear selection and unlock after drawing line
             this.selectedDot = null;
@@ -1285,6 +1297,167 @@ class DotsAndBoxesGame {
         const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
         const completedSquares = Object.keys(this.squares).length;
         return completedSquares === totalSquares;
+    }
+    
+    /**
+     * Get all possible lines (connections between adjacent dots)
+     * @returns {Array} Array of line keys
+     */
+    getAllPossibleLines() {
+        const allLines = [];
+        
+        // Generate all horizontal lines
+        for (let row = 0; row < this.gridRows; row++) {
+            for (let col = 0; col < this.gridCols - 1; col++) {
+                const dot1 = { row, col };
+                const dot2 = { row, col: col + 1 };
+                allLines.push(this.getLineKey(dot1, dot2));
+            }
+        }
+        
+        // Generate all vertical lines
+        for (let row = 0; row < this.gridRows - 1; row++) {
+            for (let col = 0; col < this.gridCols; col++) {
+                const dot1 = { row, col };
+                const dot2 = { row: row + 1, col };
+                allLines.push(this.getLineKey(dot1, dot2));
+            }
+        }
+        
+        return allLines;
+    }
+    
+    /**
+     * Check if drawing a line would complete any square
+     * @param {string} lineKey - The line to check
+     * @returns {boolean} True if the line would complete a square
+     */
+    wouldCompleteSquare(lineKey) {
+        // Parse the line
+        const [start, end] = lineKey.split('-').map(s => {
+            const [row, col] = s.split(',').map(Number);
+            return { row, col };
+        });
+        
+        const isHorizontal = start.row === end.row;
+        
+        // Temporarily add the line to check
+        this.lines.add(lineKey);
+        
+        let wouldComplete = false;
+        
+        if (isHorizontal) {
+            // Check square above
+            if (start.row > 0) {
+                if (this.isSquareComplete(start.row - 1, Math.min(start.col, end.col))) {
+                    wouldComplete = true;
+                }
+            }
+            // Check square below
+            if (!wouldComplete && start.row < this.gridRows - 1) {
+                if (this.isSquareComplete(start.row, Math.min(start.col, end.col))) {
+                    wouldComplete = true;
+                }
+            }
+        } else {
+            // Check square to the left
+            if (start.col > 0) {
+                if (this.isSquareComplete(Math.min(start.row, end.row), start.col - 1)) {
+                    wouldComplete = true;
+                }
+            }
+            // Check square to the right
+            if (!wouldComplete && start.col < this.gridCols - 1) {
+                if (this.isSquareComplete(Math.min(start.row, end.row), start.col)) {
+                    wouldComplete = true;
+                }
+            }
+        }
+        
+        // Remove the temporary line
+        this.lines.delete(lineKey);
+        
+        return wouldComplete;
+    }
+    
+    /**
+     * Get all available lines that don't complete a square
+     * @returns {Array} Array of safe line keys
+     */
+    getSafeLines() {
+        const allPossibleLines = this.getAllPossibleLines();
+        const safeLines = [];
+        
+        for (const lineKey of allPossibleLines) {
+            // Skip lines that are already drawn
+            if (this.lines.has(lineKey)) {
+                continue;
+            }
+            
+            // Check if this line would complete a square
+            if (!this.wouldCompleteSquare(lineKey)) {
+                safeLines.push(lineKey);
+            }
+        }
+        
+        return safeLines;
+    }
+    
+    /**
+     * Handle populate button click
+     * Randomly connects 10% of available safe lines
+     */
+    handlePopulate() {
+        const safeLines = this.getSafeLines();
+        
+        if (safeLines.length === 0) {
+            this.updatePopulateButtonVisibility();
+            return;
+        }
+        
+        // Calculate 10% of safe lines (at least 1 if any exist)
+        const lineCount = Math.max(1, Math.floor(safeLines.length * 0.1));
+        
+        // Shuffle and select random lines
+        const shuffled = safeLines.sort(() => Math.random() - 0.5);
+        const selectedLines = shuffled.slice(0, lineCount);
+        
+        // Draw the selected lines
+        selectedLines.forEach(lineKey => {
+            const [dot1, dot2] = this.parseLineKey(lineKey);
+            
+            // Add the line without triggering game logic
+            this.lines.add(lineKey);
+            this.lineOwners.set(lineKey, this.currentPlayer);
+            this.pulsatingLines.push({
+                line: lineKey,
+                player: this.currentPlayer,
+                time: Date.now()
+            });
+        });
+        
+        // Don't change turns - keep current player
+        // Redraw the board
+        this.draw();
+        
+        // Update button visibility
+        this.updatePopulateButtonVisibility();
+    }
+    
+    /**
+     * Update populate button visibility based on available safe lines
+     */
+    updatePopulateButtonVisibility() {
+        const populateBtn = document.getElementById('populateBtn');
+        if (!populateBtn) return;
+        
+        const safeLines = this.getSafeLines();
+        
+        if (safeLines.length === 0) {
+            populateBtn.classList.add('hidden');
+        } else {
+            populateBtn.classList.remove('hidden');
+        }
     }
 
     showWinner() {

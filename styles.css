@@ -214,6 +214,32 @@ input[type="color"] {
     background: #da190b;
 }
 
+.populate-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    background: #2196F3;
+    color: white;
+    border: 2px solid #1976D2;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.populate-btn:hover {
+    background: #1976D2;
+    transform: scale(1.05);
+}
+
+.populate-btn:active {
+    transform: scale(0.95);
+}
+
+.populate-btn.hidden {
+    display: none;
+}
+
 .game-container {
     position: relative;
     z-index: 1;
