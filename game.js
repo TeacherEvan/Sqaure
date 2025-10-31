@@ -19,8 +19,8 @@ class DotsAndBoxesGame {
     static PARTICLE_COUNT_MULTIPLIER_SMOKE = 10;
     
     // Kiss emoji constants
-    static KISS_EMOJI_MIN = 20;
-    static KISS_EMOJI_MAX = 35;
+    static KISS_EMOJI_MIN = 10;
+    static KISS_EMOJI_MAX = 17;
     
     constructor(gridSize, player1Color, player2Color) {
         this.gridSize = gridSize;
@@ -279,7 +279,7 @@ class DotsAndBoxesGame {
             const dotY = this.offsetY + row * this.cellSize;
             const distance = Math.sqrt(Math.pow(x - dotX, 2) + Math.pow(y - dotY, 2));
 
-            if (distance <= this.cellSize * 0.3) {
+            if (distance <= this.cellSize * 0.5) {
                 return { row, col };
             }
         }
@@ -658,7 +658,7 @@ class DotsAndBoxesGame {
                 );
                 
                 // Only process if touch ended near a dot
-                if (distance <= this.cellSize * 0.3) {
+                if (distance <= this.cellSize * 0.5) {
                     // Check for two-tap interaction to draw a line
                     if (this.selectedDot && (this.selectedDot.row !== endDot.row || this.selectedDot.col !== endDot.col)) {
                         // Different dot selected - check if adjacent
@@ -703,7 +703,7 @@ class DotsAndBoxesGame {
             Math.pow(y - (this.offsetY + dot.row * this.cellSize), 2)
         );
 
-        if (distance <= this.cellSize * 0.3) {
+        if (distance <= this.cellSize * 0.5) {
             this.selectedDot = dot;
             this.draw();
         }
@@ -851,21 +851,6 @@ class DotsAndBoxesGame {
         // Draw touch visuals (before other elements)
         this.drawTouchVisuals();
 
-        // Draw dots
-        for (let row = 0; row < this.gridRows; row++) {
-            for (let col = 0; col < this.gridCols; col++) {
-                const x = this.offsetX + col * this.cellSize;
-                const y = this.offsetY + row * this.cellSize;
-
-                this.ctx.fillStyle = '#333';
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, this.dotRadius, 0, Math.PI * 2);
-                this.ctx.fill();
-
-                // Selected dot highlighting moved to end of draw() for better visibility
-            }
-        }
-
         // Draw lines
         for (const lineKey of this.lines) {
             const [start, end] = this.parseLineKey(lineKey);
@@ -921,6 +906,19 @@ class DotsAndBoxesGame {
         
         // Draw truth or dare animations
         this.drawTruthOrDareAnimations();
+
+        // Draw all dots AFTER lines so they appear on top
+        for (let row = 0; row < this.gridRows; row++) {
+            for (let col = 0; col < this.gridCols; col++) {
+                const x = this.offsetX + col * this.cellSize;
+                const y = this.offsetY + row * this.cellSize;
+
+                this.ctx.fillStyle = '#333';
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, this.dotRadius, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        }
 
         // Draw selected dot with enhanced visibility
         if (this.selectedDot) {
