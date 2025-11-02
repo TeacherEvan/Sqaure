@@ -5,6 +5,7 @@ class DotsAndBoxesGame {
     static CELL_SIZE_MIN = 8;
     static CELL_SIZE_MAX = 40;
     static GRID_OFFSET = 20;
+    static POPULATE_PLAYER_ID = 3; // Player ID for populate feature lines
     
     // Animation constants
     static ANIMATION_SQUARE_DURATION = 600;
@@ -26,6 +27,7 @@ class DotsAndBoxesGame {
         this.gridSize = gridSize;
         this.player1Color = player1Color;
         this.player2Color = player2Color;
+        this.populateColor = this.generateRandomColor(); // Random 3rd color for populate feature
         this.currentPlayer = 1;
         this.scores = { 1: 0, 2: 0 };
         this.lines = new Set();
@@ -76,6 +78,22 @@ class DotsAndBoxesGame {
         this.draw();
         this.updateUI();
         this.animate();
+    }
+
+    /**
+     * Generate a random color for the populate feature
+     * Ensures it's visually distinct from player 1 and 2 colors
+     * @returns {string} Hex color string
+     */
+    generateRandomColor() {
+        // Generate random RGB values
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        
+        // Convert to hex
+        const toHex = (val) => val.toString(16).padStart(2, '0').toUpperCase();
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     }
 
     setupCanvas() {
@@ -858,7 +876,9 @@ class DotsAndBoxesGame {
             const pulsating = this.pulsatingLines.find(p => p.line === lineKey);
             const player = pulsating?.player || this.getLinePlayer(lineKey);
 
-            this.ctx.strokeStyle = player === 1 ? this.player1Color : this.player2Color;
+            // Use populate color for player 3, otherwise use player 1 or 2 colors
+            this.ctx.strokeStyle = player === DotsAndBoxesGame.POPULATE_PLAYER_ID ? this.populateColor : 
+                                   (player === 1 ? this.player1Color : this.player2Color);
             this.ctx.lineWidth = this.lineWidth;
             this.ctx.lineCap = 'round';
 
@@ -1403,7 +1423,7 @@ class DotsAndBoxesGame {
     
     /**
      * Handle populate button click
-     * Randomly connects 10% of available safe lines
+     * Randomly connects 10% of available safe lines using a random 3rd color
      */
     handlePopulate() {
         const safeLines = this.getSafeLines();
@@ -1420,16 +1440,16 @@ class DotsAndBoxesGame {
         const shuffled = safeLines.sort(() => Math.random() - 0.5);
         const selectedLines = shuffled.slice(0, lineCount);
         
-        // Draw the selected lines
+        // Draw the selected lines with player 3 (populate color)
         selectedLines.forEach(lineKey => {
             const [dot1, dot2] = this.parseLineKey(lineKey);
             
             // Add the line without triggering game logic
             this.lines.add(lineKey);
-            this.lineOwners.set(lineKey, this.currentPlayer);
+            this.lineOwners.set(lineKey, DotsAndBoxesGame.POPULATE_PLAYER_ID); // Use populate player ID
             this.pulsatingLines.push({
                 line: lineKey,
-                player: this.currentPlayer,
+                player: DotsAndBoxesGame.POPULATE_PLAYER_ID, // Use populate player ID
                 time: Date.now()
             });
         });
