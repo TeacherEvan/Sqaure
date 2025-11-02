@@ -5,6 +5,7 @@ class DotsAndBoxesGame {
     static CELL_SIZE_MIN = 8;
     static CELL_SIZE_MAX = 40;
     static GRID_OFFSET = 20;
+    static POPULATE_PLAYER_ID = 3; // Player ID for populate feature lines
     
     // Animation constants
     static ANIMATION_SQUARE_DURATION = 600;
@@ -876,7 +877,7 @@ class DotsAndBoxesGame {
             const player = pulsating?.player || this.getLinePlayer(lineKey);
 
             // Use populate color for player 3, otherwise use player 1 or 2 colors
-            this.ctx.strokeStyle = player === 3 ? this.populateColor : 
+            this.ctx.strokeStyle = player === DotsAndBoxesGame.POPULATE_PLAYER_ID ? this.populateColor : 
                                    (player === 1 ? this.player1Color : this.player2Color);
             this.ctx.lineWidth = this.lineWidth;
             this.ctx.lineCap = 'round';
@@ -1445,10 +1446,10 @@ class DotsAndBoxesGame {
             
             // Add the line without triggering game logic
             this.lines.add(lineKey);
-            this.lineOwners.set(lineKey, 3); // Use player 3 for populate color
+            this.lineOwners.set(lineKey, DotsAndBoxesGame.POPULATE_PLAYER_ID); // Use populate player ID
             this.pulsatingLines.push({
                 line: lineKey,
-                player: 3, // Use player 3 for populate color
+                player: DotsAndBoxesGame.POPULATE_PLAYER_ID, // Use populate player ID
                 time: Date.now()
             });
         });
