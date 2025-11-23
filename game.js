@@ -195,6 +195,7 @@ class DotsAndBoxesGame {
         
         // Calculate counts for each multiplier type
         // Distribute 100% of squares among multipliers (no more Truth or Dare)
+        // Note: Math.floor may leave remainders, which are assigned to x2 below
         const counts = {
             'x2': Math.floor(totalSquares * 0.65),
             'x3': Math.floor(totalSquares * 0.20),
@@ -1176,8 +1177,8 @@ class DotsAndBoxesGame {
         // Update UI continuously for score animation
         this.updateUI();
 
-        // Check if any animations are active
-        const hasActiveAnimations = this.particles.length > 0 || 
+        // Check if redraw is needed (animations, zoom, or selected dot)
+        const needsRedraw = this.particles.length > 0 || 
             this.squareAnimations.length > 0 || 
             this.touchVisuals.length > 0 || 
             this.kissEmojis.length > 0 ||
@@ -1186,8 +1187,8 @@ class DotsAndBoxesGame {
             Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || 
             this.selectedDot;
 
-        // Redraw only if animations are active or zooming
-        if (hasActiveAnimations) {
+        // Redraw only if needed
+        if (needsRedraw) {
             this.draw();
         }
 
