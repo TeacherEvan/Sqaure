@@ -11,7 +11,6 @@ class DotsAndBoxesGame {
     static ANIMATION_SQUARE_DURATION = 600;
     static ANIMATION_KISS_DURATION = 1000;
     static ANIMATION_MULTIPLIER_DURATION = 2000;
-    static ANIMATION_TRUTHORDARE_DURATION = 2000;
     static ANIMATION_PULSATING_DURATION = 2000;
     
     // Particle constants
@@ -19,9 +18,9 @@ class DotsAndBoxesGame {
     static PARTICLE_COUNT_MULTIPLIER_SPARKS = 30;
     static PARTICLE_COUNT_MULTIPLIER_SMOKE = 10;
     
-    // Kiss emoji constants
-    static KISS_EMOJI_MIN = 10;
-    static KISS_EMOJI_MAX = 17;
+    // Kiss emoji constants (reduced for performance)
+    static KISS_EMOJI_MIN = 5;
+    static KISS_EMOJI_MAX = 8;
     
     constructor(gridSize, player1Color, player2Color) {
         this.gridSize = gridSize;
@@ -195,16 +194,15 @@ class DotsAndBoxesGame {
         }
         
         // Calculate counts for each multiplier type
+        // Distribute 100% of squares among multipliers (no more Truth or Dare)
+        // Note: Math.floor may leave remainders, which are assigned to x2 below
         const counts = {
-            'x2': Math.floor(totalSquares * 0.60),
+            'x2': Math.floor(totalSquares * 0.65),
             'x3': Math.floor(totalSquares * 0.20),
             'x4': Math.floor(totalSquares * 0.10),
-            'x5': Math.floor(totalSquares * 0.05),
+            'x5': Math.floor(totalSquares * 0.04),
             'x10': Math.max(1, Math.floor(totalSquares * 0.01))
         };
-        
-        // The remaining squares get "Truth or Dare"
-        const multiplierTotal = counts.x2 + counts.x3 + counts.x4 + counts.x5 + counts.x10;
         
         let index = 0;
         
@@ -235,9 +233,9 @@ class DotsAndBoxesGame {
             }
         }
         
-        // Assign "Truth or Dare" to remaining squares
+        // Assign remaining squares to x2 multiplier to ensure 100% coverage
         while (index < allSquareKeys.length) {
-            this.squareMultipliers[allSquareKeys[index++]] = { type: 'truthOrDare' };
+            this.squareMultipliers[allSquareKeys[index++]] = { type: 'multiplier', value: 2 };
         }
     }
 
@@ -490,19 +488,14 @@ class DotsAndBoxesGame {
         const multiplierData = this.squareMultipliers[squareKey];
         const player = this.squares[squareKey];
         
-        if (multiplierData) {
-            if (multiplierData.type === 'multiplier') {
-                // Apply multiplier to the score - MULTIPLY the score
-                const currentScore = this.scores[player];
-                const multiplierValue = multiplierData.value;
-                this.scores[player] = currentScore * multiplierValue;
-                
-                // Trigger special animation
-                this.triggerMultiplierAnimation(squareKey, multiplierValue);
-            } else if (multiplierData.type === 'truthOrDare') {
-                // Trigger Truth or Dare animation
-                this.triggerTruthOrDareAnimation(squareKey);
-            }
+        if (multiplierData && multiplierData.type === 'multiplier') {
+            // Apply multiplier to the score - MULTIPLY the score
+            const currentScore = this.scores[player];
+            const multiplierValue = multiplierData.value;
+            this.scores[player] = currentScore * multiplierValue;
+            
+            // Trigger special animation
+            this.triggerMultiplierAnimation(squareKey, multiplierValue);
             
             this.updateUI();
         }
@@ -832,22 +825,6 @@ class DotsAndBoxesGame {
         }
     }
     
-    triggerTruthOrDareAnimation(squareKey) {
-        const { row, col } = this.parseSquareKey(squareKey);
-        const centerX = this.offsetX + (col + 0.5) * this.cellSize;
-        const centerY = this.offsetY + (row + 0.5) * this.cellSize;
-        
-        // Add Truth or Dare card animation
-        this.truthOrDareAnimations = this.truthOrDareAnimations || [];
-        this.truthOrDareAnimations.push({
-            squareKey,
-            startTime: Date.now(),
-            duration: DotsAndBoxesGame.ANIMATION_TRUTHORDARE_DURATION,
-            centerX,
-            centerY
-        });
-    }
-
     draw() {
         // Use logical dimensions for clearRect since context is scaled by DPR
         this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
@@ -923,9 +900,6 @@ class DotsAndBoxesGame {
         
         // Draw multiplier animations
         this.drawMultiplierAnimations();
-        
-        // Draw truth or dare animations
-        this.drawTruthOrDareAnimations();
 
         // Draw all dots AFTER lines so they appear on top
         for (let row = 0; row < this.gridRows; row++) {
@@ -1055,20 +1029,13 @@ class DotsAndBoxesGame {
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(player, x + this.cellSize / 2, y + this.cellSize / 2);
             
-            // Draw multiplier or truth/dare indicator if revealed
+            // Draw multiplier indicator if revealed
             if (this.revealedMultipliers.has(squareKey)) {
                 const multiplierData = this.squareMultipliers[squareKey];
-                if (multiplierData) {
+                if (multiplierData && multiplierData.type === 'multiplier') {
                     this.ctx.font = `bold ${this.cellSize * 0.25}px Arial`;
                     this.ctx.fillStyle = '#FFD700';
-                    
-                    if (multiplierData.type === 'multiplier') {
-                        this.ctx.fillText(`x${multiplierData.value}`, x + this.cellSize / 2, y + this.cellSize * 0.75);
-                    } else if (multiplierData.type === 'truthOrDare') {
-                        this.ctx.fillStyle = '#FF1493';
-                        this.ctx.font = `bold ${this.cellSize * 0.2}px Arial`;
-                        this.ctx.fillText('T/D', x + this.cellSize / 2, y + this.cellSize * 0.75);
-                    }
+                    this.ctx.fillText(`x${multiplierData.value}`, x + this.cellSize / 2, y + this.cellSize * 0.75);
                 }
             }
         }
@@ -1167,50 +1134,6 @@ class DotsAndBoxesGame {
         });
     }
     
-    drawTruthOrDareAnimations() {
-        if (!this.truthOrDareAnimations) return;
-        
-        const now = Date.now();
-        this.truthOrDareAnimations.forEach(anim => {
-            const age = now - anim.startTime;
-            const progress = age / anim.duration;
-            
-            if (progress >= 1) return;
-            
-            // Flip animation
-            const flipProgress = Math.sin(progress * Math.PI * 2) * 0.5 + 0.5;
-            const scale = 0.5 + flipProgress * 0.5;
-            const alpha = 1 - progress;
-            
-            this.ctx.save();
-            this.ctx.globalAlpha = alpha;
-            
-            // Draw card background
-            this.ctx.fillStyle = '#FF1493';
-            this.ctx.strokeStyle = '#FFFFFF';
-            this.ctx.lineWidth = 2;
-            
-            const cardWidth = this.cellSize * scale;
-            const cardHeight = this.cellSize * scale * 1.4;
-            const x = anim.centerX - cardWidth / 2;
-            const y = anim.centerY - cardHeight / 2;
-            
-            this.ctx.fillRect(x, y, cardWidth, cardHeight);
-            this.ctx.strokeRect(x, y, cardWidth, cardHeight);
-            
-            // Draw text
-            this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.font = `bold ${this.cellSize * scale * 0.3}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('Truth', anim.centerX, anim.centerY - this.cellSize * scale * 0.2);
-            this.ctx.fillText('or', anim.centerX, anim.centerY);
-            this.ctx.fillText('Dare', anim.centerX, anim.centerY + this.cellSize * scale * 0.2);
-            
-            this.ctx.restore();
-        });
-    }
-
     getLinePlayer(lineKey) {
         // Use stored line ownership for persistent color
         return this.lineOwners.get(lineKey) || 1;
@@ -1241,14 +1164,9 @@ class DotsAndBoxesGame {
             now - kiss.startTime < kiss.duration
         );
         
-        // Clean up multiplier and truth or dare animations
+        // Clean up multiplier animations
         if (this.multiplierAnimations) {
             this.multiplierAnimations = this.multiplierAnimations.filter(anim =>
-                now - anim.startTime < anim.duration
-            );
-        }
-        if (this.truthOrDareAnimations) {
-            this.truthOrDareAnimations = this.truthOrDareAnimations.filter(anim =>
                 now - anim.startTime < anim.duration
             );
         }
@@ -1259,13 +1177,18 @@ class DotsAndBoxesGame {
         // Update UI continuously for score animation
         this.updateUI();
 
-        // Redraw if animations are active or zooming
-        if (this.particles.length > 0 || this.squareAnimations.length > 0 || 
-            this.touchVisuals.length > 0 || this.kissEmojis.length > 0 ||
+        // Check if redraw is needed (animations, zoom, or selected dot)
+        const needsRedraw = this.particles.length > 0 || 
+            this.squareAnimations.length > 0 || 
+            this.touchVisuals.length > 0 || 
+            this.kissEmojis.length > 0 ||
             this.pulsatingLines.length > 0 ||
             (this.multiplierAnimations && this.multiplierAnimations.length > 0) ||
-            (this.truthOrDareAnimations && this.truthOrDareAnimations.length > 0) ||
-            Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || this.selectedDot) {
+            Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || 
+            this.selectedDot;
+
+        // Redraw only if needed
+        if (needsRedraw) {
             this.draw();
         }
 
