@@ -1059,3 +1059,83 @@ canvas {
         max-height: 120px;
     }
 }
+
+/* ========================================
+   Toast Notification Styles
+   ======================================== */
+
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    max-width: 90%;
+    min-width: 300px;
+    padding: 15px 20px;
+    background: #333;
+    color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toast-notification.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.toast-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 0;
+    line-height: 1;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+/* Toast types */
+.toast-info {
+    background: #2196F3;
+}
+
+.toast-success {
+    background: #4CAF50;
+}
+
+.toast-warning {
+    background: #FF9800;
+}
+
+.toast-error {
+    background: #f44336;
+}
+
+@media screen and (max-width: 768px) {
+    .toast-notification {
+        min-width: 250px;
+        top: 10px;
+        padding: 12px 15px;
+    }
+
+    .toast-message {
+        font-size: 0.85rem;
+    }
+}

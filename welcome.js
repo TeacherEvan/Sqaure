@@ -280,6 +280,12 @@ class LobbyManager {
         ];
     }
     
+    /**
+     * Generate a random 6-character room code
+     * Uses characters that are easy to read and distinguish:
+     * - Excludes I, O, 1, 0 to avoid confusion between similar-looking characters
+     * @returns {string} A 6-character room code
+     */
     generateRoomCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
@@ -310,11 +316,14 @@ class LobbyManager {
         this.isHost = false;
         this.myPlayerId = `player_${Date.now()}`;
         
-        // Simulate joining - in real app, this would fetch from server
+        // Calculate player index based on existing players + 1 for the new player
+        // In real app, server would assign colors to avoid conflicts
         const playerIndex = this.players.length;
+        const playerNumber = playerIndex + 1;
+        
         this.players.push({
             id: this.myPlayerId,
-            name: playerName || `Player ${playerIndex + 1}`,
+            name: playerName || `Player ${playerNumber}`,
             color: this.defaultColors[playerIndex % this.defaultColors.length],
             isReady: false,
             isHost: false
@@ -412,6 +421,48 @@ function exitFullscreen() {
     } else if (document.mozCancelFullScreen) { // Firefox
         document.mozCancelFullScreen();
     }
+}
+
+/**
+ * Show a toast notification message
+ * @param {string} message - The message to display
+ * @param {string} type - The type of toast: 'info', 'success', 'warning', 'error'
+ * @param {number} duration - Duration in milliseconds (default: 4000)
+ */
+function showToast(message, type = 'info', duration = 4000) {
+    // Remove any existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-message">${message}</span>
+        <button class="toast-close">×</button>
+    `;
+    
+    // Add to body
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Close button handler
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    });
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
 }
 
 // Screen transition helper
@@ -522,7 +573,7 @@ function initializeMenuNavigation() {
         
         // In a real implementation, this would validate with a server
         // For now, show a message that multiplayer requires backend
-        alert('Multiplayer mode requires backend integration.\n\nSee MULTIPLAYER_PLANNING.md for implementation details using Convex + Vercel.');
+        showToast('Multiplayer mode requires backend integration. See MULTIPLAYER_PLANNING.md for details.', 'info', 5000);
         
         // For demo purposes, we could show the lobby
         // lobbyManager.joinRoom(roomCode, playerName);
@@ -552,6 +603,7 @@ function initializeMenuNavigation() {
             const btn = document.getElementById('copyCodeBtn');
             btn.textContent = '✓';
             btn.classList.add('copied');
+            showToast('Room code copied to clipboard!', 'success', 2000);
             setTimeout(() => {
                 btn.textContent = '📋';
                 btn.classList.remove('copied');
@@ -583,12 +635,12 @@ function initializeMenuNavigation() {
     // Start multiplayer game
     document.getElementById('startMultiplayerGame').addEventListener('click', () => {
         if (!lobbyManager.canStartGame()) {
-            alert('All players must be ready to start!');
+            showToast('All players must be ready to start!', 'warning');
             return;
         }
         
         // In a real implementation, this would sync with server
-        alert('Multiplayer game start requires backend integration.\n\nSee MULTIPLAYER_PLANNING.md for implementation details.');
+        showToast('Multiplayer game start requires backend integration. See MULTIPLAYER_PLANNING.md for details.', 'info', 5000);
     });
     
     // Leave lobby
