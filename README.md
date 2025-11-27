@@ -2,7 +2,7 @@
 
 A modern, browser-based implementation of the classic Dots and Boxes game with adaptive landscape layouts, smooth animations, and touch support.
 
-![Game Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Game Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎮 Features
@@ -13,13 +13,12 @@ A modern, browser-based implementation of the classic Dots and Boxes game with a
 - **Two-player turn-based gameplay** - Players alternate turns, with bonus turns for completing squares
 - **Smart turn logic** - Complete a square, keep your turn!
 - **Real-time score tracking** - Live updates for both players
+- **Score Multipliers** - Reveal hidden multipliers when completing squares
 
 ### Visual Enhancements
 
 - **Adaptive Landscape Layout** - Automatically optimizes grid for landscape displays (e.g., 30x30 becomes ~50×18)
 - **Miniaturized Design** - Dots are 5× smaller than traditional implementations for more gameplay area
-- **Manual Zoom Controls** - 4 zoom levels (1x, 2x, 3x, 5x) for precise gameplay on any device
-- **Two-Finger Pan** - Navigate zoomed boards with intuitive pan gestures
 - **Smooth Animations** - Particle effects and square completion animations
 - **Pulsating Lines** - Visual feedback for newly drawn lines
 - **Touch Visuals** - Ripple effects for touch interactions
@@ -79,7 +78,8 @@ The game offers four preset grid sizes that automatically adapt to your display:
 2. **Turns**: Players alternate drawing lines between adjacent dots
 3. **Scoring**: Complete a square by drawing its fourth side to earn a point
 4. **Bonus Turn**: Complete a square to earn another turn immediately
-5. **Winning**: Player with the most squares when the grid is full wins
+5. **Multipliers**: Tap completed squares to reveal score multipliers
+6. **Winning**: Player with the most points when the grid is full wins
 
 ### Controls
 
@@ -87,8 +87,7 @@ The game offers four preset grid sizes that automatically adapt to your display:
 - **Touch**: Tap dots on touchscreen devices
 - **Selection**: Click a dot, then click an adjacent dot to draw a line
 - **Visual Feedback**: Selected dot shows a colored ring
-- **Zoom Controls**: Use 1x, 2x, 3x, or 5x buttons to zoom in/out
-- **Pan**: When zoomed, use two fingers to drag and navigate the board
+- **Multipliers**: Click/tap completed squares to reveal and apply multipliers
 
 ### Strategy Tips
 
@@ -101,12 +100,12 @@ The game offers four preset grid sizes that automatically adapt to your display:
 
 ```
 Sqaure/
-├── index.html          # Main HTML structure (3-screen layout)
-├── styles.css          # Styling and responsive design
-├── game.js             # Core game logic and canvas rendering
-├── welcome.js          # Screen navigation and game initialization
-├── ZOOM_FEATURE.md     # Zoom and pan feature documentation
-├── README.md           # This file
+├── index.html              # Main HTML structure (3-screen layout)
+├── styles.css              # Styling and responsive design
+├── game.js                 # Core game logic and canvas rendering
+├── welcome.js              # Screen navigation and game initialization
+├── MULTIPLAYER_PLANNING.md # Multiplayer feature planning document
+├── README.md               # This file
 └── .github/
     └── copilot-instructions.md  # Development guidelines
 ```
@@ -212,8 +211,10 @@ Default colors can be changed in `index.html`:
 
 ## 🔮 Future Enhancements
 
+- [x] Multiplayer mode planning (see MULTIPLAYER_PLANNING.md)
+- [ ] Online multiplayer with Convex + Vercel
+- [ ] Lobby system with 2-6 player support
 - [ ] AI opponent with difficulty levels
-- [ ] Online multiplayer support
 - [ ] Game replay and save/load functionality
 - [ ] Achievement system
 - [ ] Custom grid size input
@@ -249,7 +250,14 @@ Contributions welcome! Feel free to:
 
 ## 📝 Version History
 
-### v2.0.0 (Current)
+### v2.1.0 (Current)
+
+- Removed zoom controls for simplified UI
+- Added comprehensive multiplayer planning documentation
+- Score multiplier system for completed squares
+- Improved touch handling
+
+### v2.0.0
 
 - 5× smaller dots for better screen utilization
 - Adaptive landscape layout optimization

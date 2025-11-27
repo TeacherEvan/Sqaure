@@ -269,63 +269,11 @@ input[type="color"] {
     border-top: 2px solid #ddd;
 }
 
-.zoom-controls {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    padding: 0;
-    background: transparent;
-    border-top: none;
-}
-
-.zoom-btn {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    border: 2px solid #ddd;
-    background: white;
-    color: #333;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.3s;
-    min-width: 50px;
-}
-
-.zoom-btn:hover {
-    border-color: #4CAF50;
-    transform: scale(1.05);
-}
-
-.zoom-btn:active {
-    transform: scale(0.95);
-}
-
-.zoom-btn.active {
-    border-color: #4CAF50;
-    background: #4CAF50;
-    color: white;
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
-}
-
-/* Mobile-specific zoom controls */
+/* Mobile-specific footer */
 @media screen and (max-width: 768px) {
     .game-footer {
         padding: 6px 8px;
         gap: 8px;
-    }
-    
-    .zoom-controls {
-        gap: 5px;
-    }
-    
-    .zoom-btn {
-        padding: 8px 14px;
-        font-size: 0.95rem;
-        min-width: 55px;
-        touch-action: manipulation;
     }
     
     .turn-indicator {
@@ -343,27 +291,6 @@ input[type="color"] {
     .player-score {
         font-size: 1.2rem;
     }
-}
-
-.pan-hint {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: 4px 10px;
-    font-size: 0.75rem;
-    font-style: italic;
-    color: #666;
-    background: rgba(245, 245, 245, 0.95);
-    border-top: 1px solid #ddd;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    max-height: 0;
-    overflow: hidden;
-}
-
-.pan-hint.visible {
-    opacity: 1;
-    max-height: 30px;
 }
 
 .turn-indicator {
