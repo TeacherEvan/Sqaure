@@ -62,15 +62,6 @@ class DotsAndBoxesGame {
         this.displayedScores = { 1: 0, 2: 0 }; // Scores currently displayed (animated)
         this.scoreAnimationSpeed = 0.1; // How fast scores count up
 
-        // Zoom state
-        this.manualZoomLevel = 1; // User-selected zoom level (1, 2, 3, or 5)
-        this.zoomLevel = 1; // Current animated zoom level
-        this.panOffsetX = 0; // Pan offset X
-        this.panOffsetY = 0; // Pan offset Y
-        this.isPanning = false;
-        this.panStartX = 0;
-        this.panStartY = 0;
-
         this.setupCanvas();
         this.initializeMultipliers(); // Initialize multipliers AFTER grid dimensions are set
         this.setupEventListeners();
@@ -171,8 +162,8 @@ class DotsAndBoxesGame {
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
 
-        // Add zoom control listeners
-        this.setupZoomControls();
+        // Add populate button listener
+        this.setupPopulateButton();
     }
 
     initializeMultipliers() {
@@ -246,19 +237,7 @@ class DotsAndBoxesGame {
         });
     }
 
-    setupZoomControls() {
-        const zoomButtons = document.querySelectorAll('.zoom-btn');
-        zoomButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const zoom = parseInt(e.target.dataset.zoom);
-                this.setZoomLevel(zoom);
-                
-                // Update active button
-                zoomButtons.forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-            });
-        });
-        
+    setupPopulateButton() {
         // Setup populate button
         const populateBtn = document.getElementById('populateBtn');
         if (populateBtn) {
@@ -267,23 +246,6 @@ class DotsAndBoxesGame {
         
         // Initial check for populate button visibility
         this.updatePopulateButtonVisibility();
-    }
-
-    setZoomLevel(level) {
-        this.manualZoomLevel = level;
-        // Reset pan when changing zoom
-        this.panOffsetX = 0;
-        this.panOffsetY = 0;
-        
-        // Show/hide pan hint
-        const panHint = document.getElementById('panHint');
-        if (panHint) {
-            if (level > 1) {
-                panHint.classList.add('visible');
-            } else {
-                panHint.classList.remove('visible');
-            }
-        }
     }
 
     getNearestDot(x, y) {
@@ -554,16 +516,6 @@ class DotsAndBoxesGame {
         }
         this.lastInteractionTime = now;
 
-        // If zoomed in and two-finger touch, start panning
-        if (e.touches.length === 2 && this.manualZoomLevel > 1) {
-            this.isPanning = true;
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-            this.panStartX = (touch1.clientX + touch2.clientX) / 2;
-            this.panStartY = (touch1.clientY + touch2.clientY) / 2;
-            return;
-        }
-
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
             const rect = this.canvas.getBoundingClientRect();
@@ -587,26 +539,6 @@ class DotsAndBoxesGame {
 
     handleTouchMove(e) {
         e.preventDefault();
-
-        // Handle panning with two fingers when zoomed
-        if (this.isPanning && e.touches.length === 2 && this.manualZoomLevel > 1) {
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-            const currentX = (touch1.clientX + touch2.clientX) / 2;
-            const currentY = (touch1.clientY + touch2.clientY) / 2;
-            
-            const deltaX = (currentX - this.panStartX) / this.zoomLevel;
-            const deltaY = (currentY - this.panStartY) / this.zoomLevel;
-            
-            this.panOffsetX += deltaX;
-            this.panOffsetY += deltaY;
-            
-            this.panStartX = currentX;
-            this.panStartY = currentY;
-            
-            this.draw();
-            return;
-        }
 
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
@@ -639,11 +571,6 @@ class DotsAndBoxesGame {
             return;
         }
         this.lastInteractionTime = now;
-
-        // Reset panning if fingers lifted
-        if (e.touches.length < 2) {
-            this.isPanning = false;
-        }
 
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
@@ -829,20 +756,6 @@ class DotsAndBoxesGame {
         // Use logical dimensions for clearRect since context is scaled by DPR
         this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
 
-        // Save context and apply zoom if active
-        this.ctx.save();
-        
-        if (this.zoomLevel > 1.01) {
-            // Center of canvas for zoom origin
-            const centerX = this.canvas.width / (2 * (window.devicePixelRatio || 1));
-            const centerY = this.canvas.height / (2 * (window.devicePixelRatio || 1));
-            
-            // Apply transformations: translate to center, scale, translate back with pan offset
-            this.ctx.translate(centerX, centerY);
-            this.ctx.scale(this.zoomLevel, this.zoomLevel);
-            this.ctx.translate(-centerX + this.panOffsetX, -centerY + this.panOffsetY);
-        }
-
         // Draw touch visuals (before other elements)
         this.drawTouchVisuals();
 
@@ -949,9 +862,6 @@ class DotsAndBoxesGame {
             this.ctx.arc(x, y, this.dotRadius * 2, 0, Math.PI * 2);
             this.ctx.fill();
         }
-
-        // Restore context after zoom
-        this.ctx.restore();
     }
 
     drawTouchVisuals() {
@@ -1170,21 +1080,17 @@ class DotsAndBoxesGame {
                 now - anim.startTime < anim.duration
             );
         }
-
-        // Update zoom smoothly
-        this.zoomLevel += (this.manualZoomLevel - this.zoomLevel) * 0.15;
         
         // Update UI continuously for score animation
         this.updateUI();
 
-        // Check if redraw is needed (animations, zoom, or selected dot)
+        // Check if redraw is needed (animations or selected dot)
         const needsRedraw = this.particles.length > 0 || 
             this.squareAnimations.length > 0 || 
             this.touchVisuals.length > 0 || 
             this.kissEmojis.length > 0 ||
             this.pulsatingLines.length > 0 ||
             (this.multiplierAnimations && this.multiplierAnimations.length > 0) ||
-            Math.abs(this.zoomLevel - this.manualZoomLevel) > 0.01 || 
             this.selectedDot;
 
         // Redraw only if needed

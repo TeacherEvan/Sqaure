@@ -1,6 +1,6 @@
 {
     "name": "dots-and-boxes-game",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "Modern browser-based Dots and Boxes game with adaptive landscape layouts and touch support",
     "main": "index.html",
     "scripts": {
@@ -13,7 +13,7 @@
         "canvas",
         "javascript",
         "html5",
-        "two-player",
+        "multiplayer",
         "board-game"
     ],
     "author": "Teacher Evan",

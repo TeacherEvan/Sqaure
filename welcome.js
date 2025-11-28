@@ -91,8 +91,8 @@ class WelcomeAnimation {
         }
     }
     
-    moveBackToWelcome() {
-        // Switch canvas back to welcome screen
+    moveBackToMainMenu() {
+        // Switch canvas back to main menu screen
         const welcomeCanvas = document.getElementById('welcomeCanvas');
         if (welcomeCanvas) {
             this.canvas = welcomeCanvas;
@@ -256,16 +256,142 @@ class WelcomeAnimation {
     }
 }
 
+/**
+ * Lobby Manager - Handles multiplayer lobby state
+ * Note: This is a UI placeholder. Real multiplayer requires backend integration (Convex/Firebase/etc.)
+ */
+class LobbyManager {
+    constructor() {
+        this.roomCode = null;
+        this.players = [];
+        this.isHost = false;
+        this.myPlayerId = null;
+        this.gridSize = 5;
+        this.isReady = false;
+        
+        // Default player colors for up to 6 players
+        this.defaultColors = [
+            '#FF0000', // Red
+            '#0000FF', // Blue
+            '#00FF00', // Green
+            '#FF8C00', // Orange
+            '#8B00FF', // Purple
+            '#00FFFF'  // Cyan
+        ];
+    }
+    
+    /**
+     * Generate a random 6-character room code
+     * Uses characters that are easy to read and distinguish:
+     * - Excludes I, O, 1, 0 to avoid confusion between similar-looking characters
+     * @returns {string} A 6-character room code
+     */
+    generateRoomCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    }
+    
+    createRoom(playerName) {
+        this.roomCode = this.generateRoomCode();
+        this.isHost = true;
+        this.myPlayerId = 'player_1';
+        this.players = [{
+            id: this.myPlayerId,
+            name: playerName || 'Host',
+            color: this.defaultColors[0],
+            isReady: false,
+            isHost: true
+        }];
+        return this.roomCode;
+    }
+    
+    joinRoom(roomCode, playerName) {
+        // In a real implementation, this would connect to a server
+        // For now, this is a UI demonstration
+        this.roomCode = roomCode.toUpperCase();
+        this.isHost = false;
+        this.myPlayerId = `player_${Date.now()}`;
+        
+        // Calculate player index based on existing players + 1 for the new player
+        // In real app, server would assign colors to avoid conflicts
+        const playerIndex = this.players.length;
+        const playerNumber = playerIndex + 1;
+        
+        this.players.push({
+            id: this.myPlayerId,
+            name: playerName || `Player ${playerNumber}`,
+            color: this.defaultColors[playerIndex % this.defaultColors.length],
+            isReady: false,
+            isHost: false
+        });
+        
+        return true;
+    }
+    
+    leaveRoom() {
+        this.roomCode = null;
+        this.players = [];
+        this.isHost = false;
+        this.myPlayerId = null;
+        this.isReady = false;
+    }
+    
+    toggleReady() {
+        this.isReady = !this.isReady;
+        const myPlayer = this.players.find(p => p.id === this.myPlayerId);
+        if (myPlayer) {
+            myPlayer.isReady = this.isReady;
+        }
+        return this.isReady;
+    }
+    
+    updateMyColor(color) {
+        const myPlayer = this.players.find(p => p.id === this.myPlayerId);
+        if (myPlayer) {
+            myPlayer.color = color;
+        }
+    }
+    
+    updateMyName(name) {
+        const myPlayer = this.players.find(p => p.id === this.myPlayerId);
+        if (myPlayer) {
+            myPlayer.name = name;
+        }
+    }
+    
+    setGridSize(size) {
+        this.gridSize = size;
+    }
+    
+    canStartGame() {
+        // Need at least 2 players and all must be ready
+        return this.players.length >= 2 && 
+               this.players.every(p => p.isReady) &&
+               this.isHost;
+    }
+    
+    getPlayerCount() {
+        return this.players.length;
+    }
+}
+
 // Initialize welcome animation
 let welcomeAnimation = null;
+let lobbyManager = new LobbyManager();
 
 // Start animation when DOM is loaded
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         welcomeAnimation = new WelcomeAnimation();
+        initializeMenuNavigation();
     });
 } else {
     welcomeAnimation = new WelcomeAnimation();
+    initializeMenuNavigation();
 }
 
 // Centralized fullscreen request function
@@ -297,65 +423,297 @@ function exitFullscreen() {
     }
 }
 
+/**
+ * Show a toast notification message
+ * @param {string} message - The message to display
+ * @param {string} type - The type of toast: 'info', 'success', 'warning', 'error'
+ * @param {number} duration - Duration in milliseconds (default: 4000)
+ */
+function showToast(message, type = 'info', duration = 4000) {
+    // Remove any existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-message">${message}</span>
+        <button class="toast-close">×</button>
+    `;
+    
+    // Add to body
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Close button handler
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    });
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+}
+
+// Screen transition helper
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
 let selectedGridSize = null;
 let fullscreenTriggered = false;
 
-// Grid size selection
-document.querySelectorAll('.grid-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedGridSize = parseInt(btn.dataset.size);
-        document.getElementById('startGame').disabled = false;
+/**
+ * Initialize all menu navigation and event listeners
+ */
+function initializeMenuNavigation() {
+    // ========================================
+    // Main Menu Navigation
+    // ========================================
+    
+    // Create Game button
+    document.getElementById('createGameBtn').addEventListener('click', () => {
+        const playerName = 'Host';
+        lobbyManager.createRoom(playerName);
+        updateLobbyUI();
+        showScreen('lobbyScreen');
+    });
+    
+    // Join Game button
+    document.getElementById('joinGameBtn').addEventListener('click', () => {
+        showScreen('joinScreen');
+    });
+    
+    // Local Play button
+    document.getElementById('localPlayBtn').addEventListener('click', () => {
+        showScreen('localSetupScreen');
+    });
+    
+    // ========================================
+    // Local Setup Screen
+    // ========================================
+    
+    // Local grid size selection
+    document.querySelectorAll('.local-grid-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.local-grid-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedGridSize = parseInt(btn.dataset.size);
+            document.getElementById('startLocalGame').disabled = false;
+            
+            if (!fullscreenTriggered) {
+                fullscreenTriggered = true;
+                requestFullscreen();
+            }
+        });
+    });
+    
+    // Back from local setup
+    document.getElementById('backToMenuFromLocal').addEventListener('click', () => {
+        showScreen('mainMenuScreen');
+    });
+    
+    // Start local game
+    document.getElementById('startLocalGame').addEventListener('click', () => {
+        const player1Color = document.getElementById('player1Color').value;
+        const player2Color = document.getElementById('player2Color').value;
         
-        // Trigger fullscreen on first user interaction
-        if (!fullscreenTriggered) {
-            fullscreenTriggered = true;
-            requestFullscreen();
+        if (welcomeAnimation) {
+            welcomeAnimation.moveToGameScreen();
+        }
+        
+        showScreen('gameScreen');
+        requestFullscreen();
+        
+        game = new DotsAndBoxesGame(selectedGridSize, player1Color, player2Color);
+    });
+    
+    // ========================================
+    // Join Screen
+    // ========================================
+    
+    // Room code input validation
+    const joinRoomCodeInput = document.getElementById('joinRoomCode');
+    const joinPlayerNameInput = document.getElementById('joinPlayerName');
+    const joinRoomBtn = document.getElementById('joinRoomBtn');
+    
+    function validateJoinInputs() {
+        const codeValid = joinRoomCodeInput.value.length === 6;
+        const nameValid = joinPlayerNameInput.value.trim().length > 0;
+        joinRoomBtn.disabled = !(codeValid && nameValid);
+    }
+    
+    joinRoomCodeInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        validateJoinInputs();
+    });
+    
+    joinPlayerNameInput.addEventListener('input', validateJoinInputs);
+    
+    // Back from join screen
+    document.getElementById('backToMenuFromJoin').addEventListener('click', () => {
+        showScreen('mainMenuScreen');
+    });
+    
+    // Join room button
+    joinRoomBtn.addEventListener('click', () => {
+        const roomCode = joinRoomCodeInput.value;
+        const playerName = joinPlayerNameInput.value.trim();
+        
+        // In a real implementation, this would validate with a server
+        // For now, show a message that multiplayer requires backend
+        showToast('Multiplayer mode requires backend integration. See MULTIPLAYER_PLANNING.md for details.', 'info', 5000);
+        
+        // For demo purposes, we could show the lobby
+        // lobbyManager.joinRoom(roomCode, playerName);
+        // updateLobbyUI();
+        // showScreen('lobbyScreen');
+    });
+    
+    // ========================================
+    // Lobby Screen
+    // ========================================
+    
+    // Lobby grid size selection
+    document.querySelectorAll('.lobby-grid-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!lobbyManager.isHost) return; // Only host can change
+            
+            document.querySelectorAll('.lobby-grid-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            lobbyManager.setGridSize(parseInt(btn.dataset.size));
+        });
+    });
+    
+    // Copy room code
+    document.getElementById('copyCodeBtn').addEventListener('click', () => {
+        const code = document.getElementById('roomCode').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.getElementById('copyCodeBtn');
+            btn.textContent = '✓';
+            btn.classList.add('copied');
+            showToast('Room code copied to clipboard!', 'success', 2000);
+            setTimeout(() => {
+                btn.textContent = '📋';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    });
+    
+    // Player name input
+    document.getElementById('playerName').addEventListener('input', (e) => {
+        lobbyManager.updateMyName(e.target.value.trim() || 'Player');
+        updateLobbyUI();
+    });
+    
+    // Player color input
+    document.getElementById('playerColor').addEventListener('input', (e) => {
+        lobbyManager.updateMyColor(e.target.value);
+        updateLobbyUI();
+    });
+    
+    // Ready button
+    document.getElementById('readyBtn').addEventListener('click', () => {
+        const isReady = lobbyManager.toggleReady();
+        const btn = document.getElementById('readyBtn');
+        btn.textContent = isReady ? 'Ready ✓' : 'Ready';
+        btn.classList.toggle('is-ready', isReady);
+        updateLobbyUI();
+    });
+    
+    // Start multiplayer game
+    document.getElementById('startMultiplayerGame').addEventListener('click', () => {
+        if (!lobbyManager.canStartGame()) {
+            showToast('All players must be ready to start!', 'warning');
+            return;
+        }
+        
+        // In a real implementation, this would sync with server
+        showToast('Multiplayer game start requires backend integration. See MULTIPLAYER_PLANNING.md for details.', 'info', 5000);
+    });
+    
+    // Leave lobby
+    document.getElementById('leaveLobby').addEventListener('click', () => {
+        lobbyManager.leaveRoom();
+        showScreen('mainMenuScreen');
+    });
+    
+    // ========================================
+    // Game Screen
+    // ========================================
+    
+    // Exit game
+    document.getElementById('exitGame').addEventListener('click', () => {
+        exitFullscreen();
+        showScreen('mainMenuScreen');
+        game = null;
+        
+        if (welcomeAnimation) {
+            welcomeAnimation.moveBackToMainMenu();
         }
     });
-});
-
-// Start game
-document.getElementById('startGame').addEventListener('click', () => {
-    const player1Color = document.getElementById('player1Color').value;
-    const player2Color = document.getElementById('player2Color').value;
-
-    // Keep welcome animation running but move to game screen
-    if (welcomeAnimation) {
-        welcomeAnimation.moveToGameScreen();
-    }
-
-    document.getElementById('welcomeScreen').classList.remove('active');
-    document.getElementById('gameScreen').classList.add('active');
-
-    // Force fullscreen on supported browsers
-    requestFullscreen();
-
-    game = new DotsAndBoxesGame(selectedGridSize, player1Color, player2Color);
-});
-
-// Exit game
-document.getElementById('exitGame').addEventListener('click', () => {
-    exitFullscreen();
-
-    document.getElementById('gameScreen').classList.remove('active');
-    document.getElementById('welcomeScreen').classList.add('active');
-    game = null;
     
-    // Move animation back to welcome screen
-    if (welcomeAnimation) {
-        welcomeAnimation.moveBackToWelcome();
-    }
-});
-
-// Play again
-document.getElementById('playAgain').addEventListener('click', () => {
-    document.getElementById('winnerScreen').classList.remove('active');
-    document.getElementById('welcomeScreen').classList.add('active');
+    // ========================================
+    // Winner Screen
+    // ========================================
     
-    // Move animation back to welcome screen
-    if (welcomeAnimation) {
-        welcomeAnimation.moveBackToWelcome();
-    }
-});
+    // Play again
+    document.getElementById('playAgain').addEventListener('click', () => {
+        showScreen('mainMenuScreen');
+        
+        if (welcomeAnimation) {
+            welcomeAnimation.moveBackToMainMenu();
+        }
+    });
+}
+
+/**
+ * Update lobby UI with current state
+ */
+function updateLobbyUI() {
+    // Update room code
+    document.getElementById('roomCode').textContent = lobbyManager.roomCode || '------';
+    
+    // Update player count
+    document.getElementById('playerCount').textContent = lobbyManager.getPlayerCount();
+    
+    // Update players list
+    const playersList = document.getElementById('playersList');
+    playersList.innerHTML = '';
+    
+    lobbyManager.players.forEach((player, index) => {
+        const entry = document.createElement('div');
+        entry.className = 'player-entry';
+        if (player.isReady) entry.classList.add('ready');
+        if (player.isHost) entry.classList.add('host');
+        
+        entry.innerHTML = `
+            <div class="player-color-dot" style="background-color: ${player.color}"></div>
+            <span class="player-entry-name">${player.name}</span>
+            ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
+            <span class="player-entry-status">${player.isReady ? '✓ Ready' : 'Not Ready'}</span>
+        `;
+        
+        playersList.appendChild(entry);
+    });
+    
+    // Update start button state
+    document.getElementById('startMultiplayerGame').disabled = !lobbyManager.canStartGame();
+    
+    // Disable grid selection for non-hosts
+    document.querySelectorAll('.lobby-grid-btn').forEach(btn => {
+        btn.disabled = !lobbyManager.isHost;
+        btn.style.opacity = lobbyManager.isHost ? '1' : '0.5';
+    });
+}
