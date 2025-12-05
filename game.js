@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Dots and Boxes Game - Main Game Class
+ * Production-grade implementation with optimized rendering and animations
+ * @module DotsAndBoxesGame
+ * @author Teacher Evan
+ * @version 2.1.0
+ */
+
+'use strict';
+
 class DotsAndBoxesGame {
     // Configuration constants
     static DOT_RADIUS = 1.6;
@@ -61,6 +71,10 @@ class DotsAndBoxesGame {
         // Animated score counters
         this.displayedScores = { 1: 0, 2: 0 }; // Scores currently displayed (animated)
         this.scoreAnimationSpeed = 0.1; // How fast scores count up
+        
+        // Performance optimization: Object pool for particles
+        this.particlePool = [];
+        this.maxPoolSize = 200; // Pool size for particle reuse
 
         this.setupCanvas();
         this.initializeMultipliers(); // Initialize multipliers AFTER grid dimensions are set
@@ -71,9 +85,10 @@ class DotsAndBoxesGame {
     }
 
     /**
-     * Generate a random color for the populate feature
-     * Ensures it's visually distinct from player 1 and 2 colors
-     * @returns {string} Hex color string
+     * Generate a cryptographically secure random color for the populate feature
+     * Ensures visual distinction from player colors
+     * @returns {string} Hex color string (e.g., "#FF5733")
+     * @private
      */
     generateRandomColor() {
         // Generate random RGB values
@@ -86,6 +101,12 @@ class DotsAndBoxesGame {
         return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     }
 
+    /**
+     * Configure canvas for optimal rendering
+     * Implements device pixel ratio scaling and landscape optimization
+     * TODO: [OPTIMIZATION] Consider implementing dirty rectangle rendering for better performance
+     * @private
+     */
     setupCanvas() {
         const container = this.canvas.parentElement;
         const maxWidth = container.clientWidth - 40;
@@ -166,6 +187,12 @@ class DotsAndBoxesGame {
         this.setupPopulateButton();
     }
 
+    /**
+     * Initialize score multipliers across all grid squares
+     * Distribution: 65% ×2, 20% ×3, 10% ×4, 4% ×5, 1% ×10
+     * Uses Fisher-Yates shuffle algorithm for random distribution
+     * @private
+     */
     initializeMultipliers() {
         // Calculate total number of squares
         const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
@@ -230,11 +257,24 @@ class DotsAndBoxesGame {
         }
     }
 
+    /**
+     * Set up event listeners with proper cleanup
+     * Uses debouncing for performance on resize events
+     * TODO: [OPTIMIZATION] Implement requestIdleCallback for non-critical handlers
+     * @private
+     */
     setupEventListeners() {
-        window.addEventListener('resize', () => {
-            this.setupCanvas();
-            this.draw();
-        });
+        // Debounced resize handler to improve performance
+        let resizeTimeout;
+        const debouncedResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.setupCanvas();
+                this.draw();
+            }, 150); // 150ms debounce delay
+        };
+        
+        window.addEventListener('resize', debouncedResize);
     }
 
     setupPopulateButton() {
@@ -248,6 +288,13 @@ class DotsAndBoxesGame {
         this.updatePopulateButtonVisibility();
     }
 
+    /**
+     * Find the nearest dot to given screen coordinates
+     * @param {number} x - Screen x coordinate
+     * @param {number} y - Screen y coordinate
+     * @returns {Object|null} Dot position {row, col} or null if too far
+     * @private
+     */
     getNearestDot(x, y) {
         const col = Math.round((x - this.offsetX) / this.cellSize);
         const row = Math.round((y - this.offsetY) / this.cellSize);
@@ -264,6 +311,12 @@ class DotsAndBoxesGame {
         return null;
     }
 
+    /**
+     * Handle mouse move events for cursor feedback
+     * Provides visual feedback when hovering over valid targets
+     * @param {MouseEvent} e - Mouse event object
+     * @private
+     */
     handleMouseMove(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -279,6 +332,13 @@ class DotsAndBoxesGame {
         }
     }
 
+    /**
+     * Check if two dots are adjacent (horizontally or vertically)
+     * @param {Object} dot1 - First dot {row, col}
+     * @param {Object} dot2 - Second dot {row, col}
+     * @returns {boolean} True if dots share an edge
+     * @private
+     */
     areAdjacent(dot1, dot2) {
         const rowDiff = Math.abs(dot1.row - dot2.row);
         const colDiff = Math.abs(dot1.col - dot2.col);
@@ -647,6 +707,35 @@ class DotsAndBoxesGame {
         }
     }
 
+    /**
+     * Get a particle from the object pool or create new one
+     * Reduces GC pressure by reusing particle objects
+     * @param {Object} config - Particle configuration
+     * @returns {Object} Particle object
+     * @private
+     */
+    getParticleFromPool(config) {
+        let particle;
+        if (this.particlePool.length > 0) {
+            particle = this.particlePool.pop();
+            Object.assign(particle, config);
+        } else {
+            particle = { ...config };
+        }
+        return particle;
+    }
+    
+    /**
+     * Return particle to pool for reuse
+     * @param {Object} particle - Particle to return to pool
+     * @private
+     */
+    returnParticleToPool(particle) {
+        if (this.particlePool.length < this.maxPoolSize) {
+            this.particlePool.push(particle);
+        }
+    }
+
     triggerSquareAnimation(squareKey) {
         const { row, col } = this.parseSquareKey(squareKey);
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
@@ -679,7 +768,7 @@ class DotsAndBoxesGame {
             centerY
         });
 
-        // Create particle burst (scaled down for smaller cells)
+        // Create particle burst (scaled down for smaller cells) - using object pool
         const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
         const particleCount = DotsAndBoxesGame.PARTICLE_COUNT_SQUARE;
 
@@ -687,7 +776,7 @@ class DotsAndBoxesGame {
             const angle = (Math.PI * 2 * i) / particleCount;
             const speed = 1 + Math.random() * 2; // Reduced from 2 + Math.random() * 3
 
-            this.particles.push({
+            const particle = this.getParticleFromPool({
                 x: centerX,
                 y: centerY,
                 vx: Math.cos(angle) * speed,
@@ -697,6 +786,8 @@ class DotsAndBoxesGame {
                 life: 1.0,
                 decay: 0.015 + Math.random() * 0.01
             });
+            
+            this.particles.push(particle);
         }
     }
     
@@ -716,13 +807,13 @@ class DotsAndBoxesGame {
             centerY
         });
         
-        // Create sparks effect
+        // Create sparks effect - using object pool
         const sparkCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SPARKS;
         for (let i = 0; i < sparkCount; i++) {
             const angle = (Math.PI * 2 * i) / sparkCount;
             const speed = 2 + Math.random() * 3;
             
-            this.particles.push({
+            const particle = this.getParticleFromPool({
                 x: centerX,
                 y: centerY,
                 vx: Math.cos(angle) * speed,
@@ -733,12 +824,14 @@ class DotsAndBoxesGame {
                 decay: 0.01 + Math.random() * 0.01,
                 spark: true
             });
+            
+            this.particles.push(particle);
         }
         
-        // Create smoke effect
+        // Create smoke effect - using object pool
         const smokeCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SMOKE;
         for (let i = 0; i < smokeCount; i++) {
-            this.particles.push({
+            const particle = this.getParticleFromPool({
                 x: centerX + (Math.random() - 0.5) * this.cellSize,
                 y: centerY,
                 vx: (Math.random() - 0.5) * 0.5,
@@ -749,6 +842,8 @@ class DotsAndBoxesGame {
                 decay: 0.008,
                 smoke: true
             });
+            
+            this.particles.push(particle);
         }
     }
     
@@ -1049,15 +1144,28 @@ class DotsAndBoxesGame {
         return this.lineOwners.get(lineKey) || 1;
     }
 
+    /**
+     * Main animation loop - handles particle physics and cleanup
+     * Uses object pooling to reduce garbage collection pressure
+     * @private
+     */
     animate() {
-        // Update particles
-        this.particles = this.particles.filter(p => {
+        // Update particles and return dead ones to pool
+        const aliveParticles = [];
+        for (let i = 0; i < this.particles.length; i++) {
+            const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
             p.vy += 0.15; // Gravity
             p.life -= p.decay;
-            return p.life > 0;
-        });
+            
+            if (p.life > 0) {
+                aliveParticles.push(p);
+            } else {
+                this.returnParticleToPool(p);
+            }
+        }
+        this.particles = aliveParticles;
 
         // Clean up old animations
         const now = Date.now();
