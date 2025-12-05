@@ -9,6 +9,12 @@
 </head>
 
 <body>
+    <!-- Loading Skeleton -->
+    <div id="loadingSkeleton" class="loading-skeleton hidden">
+        <div class="loading-spinner" role="status" aria-label="Loading game"></div>
+        <div class="loading-text">Loading Game...</div>
+    </div>
+
     <!-- Main Menu Screen -->
     <div id="mainMenuScreen" class="screen active">
         <canvas id="welcomeCanvas"></canvas>
@@ -17,9 +23,9 @@
             <p class="credit">Created by Teacher Evan</p>
 
             <div class="menu-options">
-                <button id="createGameBtn" class="menu-btn">Create Game</button>
-                <button id="joinGameBtn" class="menu-btn">Join Game</button>
-                <button id="localPlayBtn" class="menu-btn secondary">Local Play (2 Players)</button>
+                <button id="createGameBtn" class="menu-btn" aria-label="Create a new multiplayer game">Create Game</button>
+                <button id="joinGameBtn" class="menu-btn" aria-label="Join an existing game">Join Game</button>
+                <button id="localPlayBtn" class="menu-btn secondary" aria-label="Start local 2-player game">Local Play (2 Players)</button>
             </div>
         </div>
     </div>
@@ -33,22 +39,22 @@
 
             <div class="setup-section">
                 <h2>Select Grid Size</h2>
-                <div class="grid-options">
-                    <button class="grid-btn local-grid-btn" data-size="5">5x5</button>
-                    <button class="grid-btn local-grid-btn" data-size="10">10x10</button>
-                    <button class="grid-btn local-grid-btn" data-size="20">20x20</button>
-                    <button class="grid-btn local-grid-btn" data-size="30">30x30</button>
+                <div class="grid-options" role="group" aria-label="Grid size selection">
+                    <button class="grid-btn local-grid-btn" data-size="5" aria-label="5 by 5 grid">5x5</button>
+                    <button class="grid-btn local-grid-btn" data-size="10" aria-label="10 by 10 grid">10x10</button>
+                    <button class="grid-btn local-grid-btn" data-size="20" aria-label="20 by 20 grid">20x20</button>
+                    <button class="grid-btn local-grid-btn" data-size="30" aria-label="30 by 30 grid">30x30</button>
                 </div>
             </div>
 
             <div class="setup-section">
                 <h2>Player 1 Color</h2>
-                <input type="color" id="player1Color" value="#FF0000">
+                <input type="color" id="player1Color" value="#FF0000" aria-label="Choose player 1 color">
             </div>
 
             <div class="setup-section">
                 <h2>Player 2 Color</h2>
-                <input type="color" id="player2Color" value="#0000FF">
+                <input type="color" id="player2Color" value="#0000FF" aria-label="Choose player 2 color">
             </div>
 
             <div class="button-row">

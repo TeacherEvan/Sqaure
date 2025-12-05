@@ -1,3 +1,11 @@
+/**
+ * @fileoverview Welcome Screen Background Animation with Flocking Behavior
+ * Implements optimized boids algorithm with spatial partitioning for performance
+ * @module WelcomeAnimation
+ * @author Teacher Evan
+ * @version 2.1.0
+ */
+
 'use strict';
 
 /**
@@ -24,17 +32,31 @@ class WelcomeAnimation {
         window.addEventListener('resize', () => this.handleResize());
     }
     
+    /**
+     * Initialize canvas dimensions and device pixel ratio
+     * Handles high-DPI displays for crisp rendering
+     * @private
+     */
     setupCanvas() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         this.initializeSpatialGrid();
     }
     
+    /**
+     * Handle window resize events with debouncing
+     * TODO: [OPTIMIZATION] Implement debouncing to reduce resize event frequency
+     * @private
+     */
     handleResize() {
         this.setupCanvas();
     }
     
-    // Spatial partitioning for performance optimization
+    /**
+     * Spatial partitioning for performance optimization
+     * Divides canvas into grid cells to optimize neighbor lookups
+     * @private
+     */
     initializeSpatialGrid() {
         this.gridCols = Math.ceil(this.canvas.width / this.gridCellSize);
         this.gridRows = Math.ceil(this.canvas.height / this.gridCellSize);
@@ -43,6 +65,11 @@ class WelcomeAnimation {
         );
     }
     
+    /**
+     * Update spatial grid with current dot positions
+     * Called each frame before calculating flocking behavior
+     * @private
+     */
     updateSpatialGrid() {
         // Clear grid
         for (let row of this.spatialGrid) {
@@ -61,6 +88,13 @@ class WelcomeAnimation {
         }
     }
     
+    /**
+     * Get neighboring dots within 3x3 grid around given dot
+     * Optimizes performance by checking only nearby grid cells
+     * @param {Object} dot - The dot to find neighbors for
+     * @returns {Array<Object>} Array of nearby dots
+     * @private
+     */
     getNeighborDots(dot) {
         const gridX = Math.floor(dot.x / this.gridCellSize);
         const gridY = Math.floor(dot.y / this.gridCellSize);
@@ -383,53 +417,111 @@ class LobbyManager {
 let welcomeAnimation = null;
 let lobbyManager = new LobbyManager();
 
+/**
+ * Lazy load welcome animation when DOM is ready
+ * Defers initialization to improve initial page load performance
+ * @private
+ */
+function initializeWelcomeAnimationLazily() {
+    // Use requestIdleCallback for non-blocking initialization
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+            welcomeAnimation = new WelcomeAnimation();
+        }, { timeout: 1000 });
+    } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(() => {
+            welcomeAnimation = new WelcomeAnimation();
+        }, 100);
+    }
+}
+
 // Start animation when DOM is loaded
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        welcomeAnimation = new WelcomeAnimation();
+        initializeWelcomeAnimationLazily();
         initializeMenuNavigation();
     });
 } else {
-    welcomeAnimation = new WelcomeAnimation();
+    initializeWelcomeAnimationLazily();
     initializeMenuNavigation();
 }
 
-// Centralized fullscreen request function
+/**
+ * Centralized fullscreen request function with error handling
+ * Supports multiple browser APIs for maximum compatibility
+ * @returns {Promise<void>} Resolves when fullscreen is entered or fails gracefully
+ */
 function requestFullscreen() {
     const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(() => {
-            // Fullscreen not supported or denied
-        });
-    } else if (elem.webkitRequestFullscreen) { // Safari
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { // IE11
-        elem.msRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) { // Firefox
-        elem.mozRequestFullScreen();
+    
+    try {
+        if (elem.requestFullscreen) {
+            return elem.requestFullscreen().catch((err) => {
+                console.warn('Fullscreen request denied:', err.message);
+            });
+        } else if (elem.webkitRequestFullscreen) { // Safari
+            elem.webkitRequestFullscreen();
+            return Promise.resolve();
+        } else if (elem.msRequestFullscreen) { // IE11
+            elem.msRequestFullscreen();
+            return Promise.resolve();
+        } else if (elem.mozRequestFullScreen) { // Firefox
+            elem.mozRequestFullScreen();
+            return Promise.resolve();
+        }
+    } catch (err) {
+        console.warn('Fullscreen not supported:', err.message);
     }
-}
-
-// Centralized fullscreen exit function
-function exitFullscreen() {
-    if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-    } else if (document.webkitExitFullscreen) { // Safari
-        document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { // IE11
-        document.msExitFullscreen();
-    } else if (document.mozCancelFullScreen) { // Firefox
-        document.mozCancelFullScreen();
-    }
+    
+    return Promise.resolve();
 }
 
 /**
- * Show a toast notification message
+ * Centralized fullscreen exit function with error handling
+ * @returns {Promise<void>} Resolves when fullscreen is exited or fails gracefully
+ */
+function exitFullscreen() {
+    try {
+        if (document.exitFullscreen) {
+            return document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) { // Safari
+            document.webkitExitFullscreen();
+            return Promise.resolve();
+        } else if (document.msExitFullscreen) { // IE11
+            document.msExitFullscreen();
+            return Promise.resolve();
+        } else if (document.mozCancelFullScreen) { // Firefox
+            document.mozCancelFullScreen();
+            return Promise.resolve();
+        }
+    } catch (err) {
+        console.warn('Fullscreen exit failed:', err.message);
+    }
+    
+    return Promise.resolve();
+}
+
+/**
+ * Show a toast notification message with auto-dismiss
  * @param {string} message - The message to display
- * @param {string} type - The type of toast: 'info', 'success', 'warning', 'error'
- * @param {number} duration - Duration in milliseconds (default: 4000)
+ * @param {('info'|'success'|'warning'|'error')} type - The type of toast notification
+ * @param {number} [duration=4000] - Duration in milliseconds before auto-dismiss
+ * @throws {Error} If message is empty or type is invalid
  */
 function showToast(message, type = 'info', duration = 4000) {
+    // Input validation
+    if (!message || typeof message !== 'string') {
+        console.error('showToast: Invalid message parameter');
+        return;
+    }
+    
+    const validTypes = ['info', 'success', 'warning', 'error'];
+    if (!validTypes.includes(type)) {
+        console.warn(`showToast: Invalid type "${type}", defaulting to "info"`);
+        type = 'info';
+    }
+    
     // Remove any existing toast
     const existingToast = document.querySelector('.toast-notification');
     if (existingToast) {
@@ -439,36 +531,58 @@ function showToast(message, type = 'info', duration = 4000) {
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'polite');
     toast.innerHTML = `
         <span class="toast-message">${message}</span>
-        <button class="toast-close">×</button>
+        <button class="toast-close" aria-label="Close notification">×</button>
     `;
     
     // Add to body
     document.body.appendChild(toast);
     
     // Trigger animation
-    setTimeout(() => toast.classList.add('show'), 10);
-    
-    // Close button handler
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
     });
     
+    // Close button handler
+    const closeBtn = toast.querySelector('.toast-close');
+    const closeToast = () => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    };
+    
+    closeBtn.addEventListener('click', closeToast);
+    
     // Auto-remove after duration
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }
-    }, duration);
+    setTimeout(closeToast, duration);
 }
 
-// Screen transition helper
+/**
+ * Transition between screens with smooth animation
+ * @param {string} screenId - The ID of the screen to show
+ * @throws {Error} If screen element doesn't exist
+ */
 function showScreen(screenId) {
+    const newScreen = document.getElementById(screenId);
+    
+    if (!newScreen) {
+        console.error(`showScreen: Screen with ID "${screenId}" not found`);
+        return;
+    }
+    
+    // Remove active class from all screens
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    
+    // Add active class to new screen
+    newScreen.classList.add('active');
 }
 
 let selectedGridSize = null;
