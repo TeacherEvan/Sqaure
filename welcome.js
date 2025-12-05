@@ -541,12 +541,10 @@ function showToast(message, type = 'info', duration = 4000) {
     // Add to body
     document.body.appendChild(toast);
     
-    // Trigger animation
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-        });
-    });
+    // Trigger animation with minimal delay for CSS transition
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
     
     // Close button handler
     const closeBtn = toast.querySelector('.toast-close');

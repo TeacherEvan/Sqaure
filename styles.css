@@ -1222,7 +1222,16 @@ canvas {
     font-size: 1.2rem;
     color: #2c3e50;
     font-weight: 600;
-    animation: pulse 1.5s ease-in-out infinite;
+    animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* ========================================
