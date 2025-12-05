@@ -166,9 +166,23 @@ body {
 input[type="color"] {
     width: 100px;
     height: 50px;
-    border: none;
+    border: 3px solid #e0e0e0;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+input[type="color"]:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2);
+    transform: scale(1.05);
+}
+
+input[type="color"]:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
 }
 
 .start-btn {
@@ -291,37 +305,48 @@ input[type="color"] {
 .exit-btn {
     padding: 6px 20px;
     font-size: 0.85rem;
-    background: #f44336;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+    font-weight: 600;
 }
 
 .exit-btn:hover {
-    background: #da190b;
+    background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+.exit-btn:active {
+    transform: translateY(0);
 }
 
 .populate-btn {
     padding: 8px 16px;
     font-size: 0.9rem;
-    font-weight: bold;
-    background: #2196F3;
+    font-weight: 600;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
     color: white;
-    border: 2px solid #1976D2;
-    border-radius: 8px;
+    border: none;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
 .populate-btn:hover {
-    background: #1976D2;
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 }
 
 .populate-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
 }
 
 .populate-btn.hidden {
@@ -681,17 +706,24 @@ canvas {
 .back-btn {
     padding: 15px 30px;
     font-size: 1rem;
-    background: #757575;
+    background: linear-gradient(135deg, #757575 0%, #616161 100%);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
 }
 
 .back-btn:hover {
-    background: #616161;
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #616161 0%, #424242 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.back-btn:active {
+    transform: translateY(0);
 }
 
 /* Button Row for Back + Action buttons */
@@ -911,15 +943,21 @@ canvas {
 .name-input {
     padding: 10px 15px;
     font-size: 1rem;
-    border: 2px solid #ddd;
-    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
     outline: none;
-    transition: border-color 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 200px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.name-input:hover {
+    border-color: #bdbdbd;
 }
 
 .name-input:focus {
     border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 /* Lobby Actions */
@@ -933,26 +971,30 @@ canvas {
 .ready-btn {
     padding: 15px 40px;
     font-size: 1.2rem;
-    font-weight: bold;
-    background: #FF9800;
+    font-weight: 600;
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
 }
 
 .ready-btn:hover {
-    background: #F57C00;
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #F57C00 0%, #EF6C00 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
 }
 
 .ready-btn.is-ready {
-    background: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .ready-btn.is-ready:hover {
-    background: #388E3C;
+    background: linear-gradient(135deg, #388E3C 0%, #2E7D32 100%);
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
 }
 
 .leave-btn {
@@ -961,14 +1003,17 @@ canvas {
     background: transparent;
     color: #f44336;
     border: 2px solid #f44336;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
 }
 
 .leave-btn:hover {
-    background: #f44336;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
 
 /* ========================================
@@ -988,21 +1033,27 @@ canvas {
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 8px;
-    border: 3px solid #ddd;
+    border: 3px solid #e0e0e0;
     border-radius: 12px;
     outline: none;
     width: 250px;
-    transition: border-color 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.room-code-input:hover {
+    border-color: #bdbdbd;
 }
 
 .room-code-input:focus {
     border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
 }
 
 .room-code-input::placeholder {
     letter-spacing: 2px;
     font-size: 1rem;
-    color: #aaa;
+    color: #bdbdbd;
 }
 
 /* ========================================
@@ -1177,9 +1228,14 @@ canvas {
     }
 }
 
-/* ========================================
-   Loading Skeleton & States
-   ======================================== */
+/* Enhanced focus states for accessibility */
+button:focus-visible,
+input:focus-visible {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+}
+
+/* Loading Skeleton & States */
 
 .loading-skeleton {
     position: fixed;
