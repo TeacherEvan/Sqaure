@@ -71,6 +71,10 @@ class DotsAndBoxesGame {
         // Animated score counters
         this.displayedScores = { 1: 0, 2: 0 }; // Scores currently displayed (animated)
         this.scoreAnimationSpeed = 0.1; // How fast scores count up
+        
+        // Performance optimization: Object pool for particles
+        this.particlePool = [];
+        this.maxPoolSize = 200; // Pool size for particle reuse
 
         this.setupCanvas();
         this.initializeMultipliers(); // Initialize multipliers AFTER grid dimensions are set
@@ -703,6 +707,35 @@ class DotsAndBoxesGame {
         }
     }
 
+    /**
+     * Get a particle from the object pool or create new one
+     * Reduces GC pressure by reusing particle objects
+     * @param {Object} config - Particle configuration
+     * @returns {Object} Particle object
+     * @private
+     */
+    getParticleFromPool(config) {
+        let particle;
+        if (this.particlePool.length > 0) {
+            particle = this.particlePool.pop();
+            Object.assign(particle, config);
+        } else {
+            particle = { ...config };
+        }
+        return particle;
+    }
+    
+    /**
+     * Return particle to pool for reuse
+     * @param {Object} particle - Particle to return to pool
+     * @private
+     */
+    returnParticleToPool(particle) {
+        if (this.particlePool.length < this.maxPoolSize) {
+            this.particlePool.push(particle);
+        }
+    }
+
     triggerSquareAnimation(squareKey) {
         const { row, col } = this.parseSquareKey(squareKey);
         const centerX = this.offsetX + (col + 0.5) * this.cellSize;
@@ -735,7 +768,7 @@ class DotsAndBoxesGame {
             centerY
         });
 
-        // Create particle burst (scaled down for smaller cells)
+        // Create particle burst (scaled down for smaller cells) - using object pool
         const playerColor = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
         const particleCount = DotsAndBoxesGame.PARTICLE_COUNT_SQUARE;
 
@@ -743,7 +776,7 @@ class DotsAndBoxesGame {
             const angle = (Math.PI * 2 * i) / particleCount;
             const speed = 1 + Math.random() * 2; // Reduced from 2 + Math.random() * 3
 
-            this.particles.push({
+            const particle = this.getParticleFromPool({
                 x: centerX,
                 y: centerY,
                 vx: Math.cos(angle) * speed,
@@ -753,6 +786,8 @@ class DotsAndBoxesGame {
                 life: 1.0,
                 decay: 0.015 + Math.random() * 0.01
             });
+            
+            this.particles.push(particle);
         }
     }
     
@@ -772,13 +807,13 @@ class DotsAndBoxesGame {
             centerY
         });
         
-        // Create sparks effect
+        // Create sparks effect - using object pool
         const sparkCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SPARKS;
         for (let i = 0; i < sparkCount; i++) {
             const angle = (Math.PI * 2 * i) / sparkCount;
             const speed = 2 + Math.random() * 3;
             
-            this.particles.push({
+            const particle = this.getParticleFromPool({
                 x: centerX,
                 y: centerY,
                 vx: Math.cos(angle) * speed,
@@ -789,12 +824,14 @@ class DotsAndBoxesGame {
                 decay: 0.01 + Math.random() * 0.01,
                 spark: true
             });
+            
+            this.particles.push(particle);
         }
         
-        // Create smoke effect
+        // Create smoke effect - using object pool
         const smokeCount = DotsAndBoxesGame.PARTICLE_COUNT_MULTIPLIER_SMOKE;
         for (let i = 0; i < smokeCount; i++) {
-            this.particles.push({
+            const particle = this.getParticleFromPool({
                 x: centerX + (Math.random() - 0.5) * this.cellSize,
                 y: centerY,
                 vx: (Math.random() - 0.5) * 0.5,
@@ -805,6 +842,8 @@ class DotsAndBoxesGame {
                 decay: 0.008,
                 smoke: true
             });
+            
+            this.particles.push(particle);
         }
     }
     
@@ -1105,15 +1144,28 @@ class DotsAndBoxesGame {
         return this.lineOwners.get(lineKey) || 1;
     }
 
+    /**
+     * Main animation loop - handles particle physics and cleanup
+     * Uses object pooling to reduce garbage collection pressure
+     * @private
+     */
     animate() {
-        // Update particles
-        this.particles = this.particles.filter(p => {
+        // Update particles and return dead ones to pool
+        const aliveParticles = [];
+        for (let i = 0; i < this.particles.length; i++) {
+            const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
             p.vy += 0.15; // Gravity
             p.life -= p.decay;
-            return p.life > 0;
-        });
+            
+            if (p.life > 0) {
+                aliveParticles.push(p);
+            } else {
+                this.returnParticleToPool(p);
+            }
+        }
+        this.particles = aliveParticles;
 
         // Clean up old animations
         const now = Date.now();

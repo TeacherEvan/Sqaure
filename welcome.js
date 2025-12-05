@@ -24,12 +24,15 @@ class WelcomeAnimation {
         this.spatialGrid = null; // For spatial partitioning optimization
         this.gridCellSize = 100; // Size of each cell in spatial grid
         
+        // Debounce resize handling for performance
+        this.resizeTimeout = null;
+        
         this.setupCanvas();
         this.initDots();
         this.animate();
         
-        // Handle window resize
-        window.addEventListener('resize', () => this.handleResize());
+        // Handle window resize with debouncing
+        window.addEventListener('resize', () => this.handleResizeDebounced());
     }
     
     /**
@@ -50,6 +53,16 @@ class WelcomeAnimation {
      */
     handleResize() {
         this.setupCanvas();
+    }
+    
+    /**
+     * Debounced resize handler to reduce performance impact
+     * Waits 200ms after last resize event before recalculating canvas
+     * @private
+     */
+    handleResizeDebounced() {
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = setTimeout(() => this.handleResize(), 200);
     }
     
     /**
@@ -374,27 +387,43 @@ class LobbyManager {
         this.isReady = false;
     }
     
+    /**
+     * Toggle ready state with optimistic UI update
+     * Provides immediate visual feedback before server confirmation
+     * @returns {boolean} New ready state
+     */
     toggleReady() {
         this.isReady = !this.isReady;
         const myPlayer = this.players.find(p => p.id === this.myPlayerId);
         if (myPlayer) {
             myPlayer.isReady = this.isReady;
         }
+        // TODO: [OPTIMIZATION] Sync with server for multiplayer mode
         return this.isReady;
     }
     
+    /**
+     * Update player color with optimistic UI
+     * @param {string} color - New color hex value
+     */
     updateMyColor(color) {
         const myPlayer = this.players.find(p => p.id === this.myPlayerId);
         if (myPlayer) {
             myPlayer.color = color;
         }
+        // TODO: [OPTIMIZATION] Broadcast to other players in multiplayer
     }
     
+    /**
+     * Update player name with optimistic UI
+     * @param {string} name - New player name
+     */
     updateMyName(name) {
         const myPlayer = this.players.find(p => p.id === this.myPlayerId);
         if (myPlayer) {
             myPlayer.name = name;
         }
+        // TODO: [OPTIMIZATION] Broadcast to other players in multiplayer
     }
     
     setGridSize(size) {
