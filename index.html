@@ -26,6 +26,7 @@
                 <button id="createGameBtn" class="menu-btn" aria-label="Create a new multiplayer game">Create Game</button>
                 <button id="joinGameBtn" class="menu-btn" aria-label="Join an existing game">Join Game</button>
                 <button id="localPlayBtn" class="menu-btn secondary" aria-label="Start local 2-player game">Local Play (2 Players)</button>
+                <button id="vsComputerBtn" class="menu-btn secondary" aria-label="Play against random AI opponent">vs Computer (Random AI)</button>
             </div>
         </div>
     </div>
@@ -55,6 +56,11 @@
             <div class="setup-section">
                 <h2>Player 2 Color</h2>
                 <input type="color" id="player2Color" value="#0000FF" aria-label="Choose player 2 color">
+            </div>
+
+            <div class="setup-section" id="opponentSection">
+                <h2>Opponent</h2>
+                <p id="opponentLabel" class="credit" style="margin: 0;">Player 2 (Human)</p>
             </div>
 
             <div class="button-row">

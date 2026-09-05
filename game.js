@@ -32,10 +32,15 @@ class DotsAndBoxesGame {
     static KISS_EMOJI_MIN = 5;
     static KISS_EMOJI_MAX = 8;
     
-    constructor(gridSize, player1Color, player2Color) {
+    constructor(gridSize, player1Color, player2Color, gameMode = 'local') {
         this.gridSize = gridSize;
         this.player1Color = player1Color;
         this.player2Color = player2Color;
+        this.gameMode = gameMode; // 'local' or 'ai'
+        this.isGameOver = false;
+        this.aiThinking = false; // True while AI move is scheduled (turn-indicator hint)
+        this.aiMoveInProgress = false; // True only while AI's drawLine is executing
+        this.aiTimeoutId = null; // Track scheduled AI move for cancellation
         this.populateColor = this.generateRandomColor(); // Random 3rd color for populate feature
         this.currentPlayer = 1;
         this.scores = { 1: 0, 2: 0 };
@@ -531,6 +536,12 @@ class DotsAndBoxesGame {
     drawLine(dot1, dot2) {
         const lineKey = this.getLineKey(dot1, dot2);
 
+        // Reject human-driven moves while it's not the human's turn (AI mode guard).
+        // AI-initiated moves (from makeAIMove) bypass the gate via aiMoveInProgress.
+        if (!this.aiMoveInProgress && !this.isHumanTurn()) {
+            return;
+        }
+
         if (!this.lines.has(lineKey)) {
             this.lines.add(lineKey);
             this.lineOwners.set(lineKey, this.currentPlayer); // Store line ownership permanently
@@ -553,14 +564,74 @@ class DotsAndBoxesGame {
 
             this.updateUI();
             this.checkGameOver();
-            
+
             // Update populate button visibility
             this.updatePopulateButtonVisibility();
-            
+
             // Clear selection and unlock after drawing line
             this.selectedDot = null;
             this.selectionLocked = false;
+
+            // If playing vs AI and it's Player 2's turn now, schedule AI move
+            if (this.gameMode === 'ai' && this.currentPlayer === 2 && !this.isGameOver) {
+                this.scheduleAIMove();
+            }
         }
+    }
+
+    /**
+     * Check whether the current turn belongs to the human.
+     * In AI mode, only Player 1 is human; Player 2 is the computer.
+     * @returns {boolean}
+     */
+    isHumanTurn() {
+        if (this.gameMode !== 'ai') return true;
+        return this.currentPlayer === 1;
+    }
+
+    /**
+     * Schedule the AI's move with a small delay so the turn indicator
+     * is visible to the human before the AI acts. Cancel any prior
+     * scheduled move to avoid double-firing.
+     */
+    scheduleAIMove() {
+        if (this.aiTimeoutId !== null) {
+            clearTimeout(this.aiTimeoutId);
+            this.aiTimeoutId = null;
+        }
+        this.aiThinking = true;
+        this.updateUI();
+        const delay = 500 + Math.floor(Math.random() * 500); // 500-1000ms
+        this.aiTimeoutId = setTimeout(() => {
+            this.aiTimeoutId = null;
+            this.makeAIMove();
+        }, delay);
+    }
+
+    /**
+     * Random AI move: pick a uniformly random unused line and draw it.
+     * If the move completes a square, the AI keeps its turn (per game rules).
+     */
+    makeAIMove() {
+        this.aiThinking = false;
+        if (this.gameMode !== 'ai' || this.currentPlayer !== 2 || this.isGameOver) {
+            this.updateUI();
+            return;
+        }
+        const available = this.getAllPossibleLines().filter(k => !this.lines.has(k));
+        if (available.length === 0) {
+            this.updateUI();
+            return;
+        }
+        const lineKey = available[Math.floor(Math.random() * available.length)];
+        const [dot1, dot2] = this.parseLineKey(lineKey);
+        this.aiMoveInProgress = true;
+        try {
+            this.drawLine(dot1, dot2);
+        } finally {
+            this.aiMoveInProgress = false;
+        }
+        // drawLine will reschedule via scheduleAIMove() if AI keeps its turn
     }
 
     handleTouchStart(e) {
@@ -1235,13 +1306,24 @@ class DotsAndBoxesGame {
         document.getElementById('player1Info').style.color = this.player1Color;
         document.getElementById('player2Info').style.color = this.player2Color;
 
-        document.getElementById('turnIndicator').textContent = `Player ${this.currentPlayer}'s Turn`;
+        let turnText = `Player ${this.currentPlayer}'s Turn`;
+        if (this.gameMode === 'ai' && this.currentPlayer === 2) {
+            turnText = this.aiThinking ? 'Computer is thinking...' : "Computer's Turn";
+        }
+        document.getElementById('turnIndicator').textContent = turnText;
         document.getElementById('turnIndicator').style.color = this.currentPlayer === 1 ? this.player1Color : this.player2Color;
+
+        // Update player 2 label dynamically when playing vs AI
+        const player2NameEl = document.querySelector('#player2Info .player-name');
+        if (player2NameEl) {
+            player2NameEl.textContent = this.gameMode === 'ai' ? 'Computer' : 'Player 2';
+        }
     }
 
     checkGameOver() {
         const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
         const completedSquares = Object.keys(this.squares).length;
+        this.isGameOver = completedSquares >= totalSquares;
 
         if (completedSquares === totalSquares) {
             setTimeout(() => this.showWinner(), 500);

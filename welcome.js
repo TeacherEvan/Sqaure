@@ -638,6 +638,16 @@ function initializeMenuNavigation() {
     
     // Local Play button
     document.getElementById('localPlayBtn').addEventListener('click', () => {
+        window.__gameMode = 'local';
+        const oppLabel = document.getElementById('opponentLabel');
+        if (oppLabel) oppLabel.textContent = 'Player 2 (Human)';
+        showScreen('localSetupScreen');
+    });
+
+    document.getElementById('vsComputerBtn').addEventListener('click', () => {
+        window.__gameMode = 'ai';
+        const oppLabel = document.getElementById('opponentLabel');
+        if (oppLabel) oppLabel.textContent = 'Computer (Random AI)';
         showScreen('localSetupScreen');
     });
     
@@ -662,6 +672,7 @@ function initializeMenuNavigation() {
     
     // Back from local setup
     document.getElementById('backToMenuFromLocal').addEventListener('click', () => {
+        window.__gameMode = undefined;
         showScreen('mainMenuScreen');
     });
     
@@ -677,7 +688,8 @@ function initializeMenuNavigation() {
         showScreen('gameScreen');
         requestFullscreen();
         
-        game = new DotsAndBoxesGame(selectedGridSize, player1Color, player2Color);
+        const gameMode = window.__gameMode || 'local';
+        game = new DotsAndBoxesGame(selectedGridSize, player1Color, player2Color, gameMode);
     });
     
     // ========================================
