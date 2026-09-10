@@ -853,11 +853,14 @@ function updateLobbyUI() {
         
         entry.innerHTML = `
             <div class="player-color-dot" style="background-color: ${player.color}"></div>
-            <span class="player-entry-name">${player.name}</span>
+            <span class="player-entry-name"></span>
             ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
             <span class="player-entry-status">${player.isReady ? '✓ Ready' : 'Not Ready'}</span>
         `;
         
+        // Render player name as text to prevent stored XSS from
+        // user-controlled input (joinRoom/updateMyName).
+        entry.querySelector('.player-entry-name').textContent = player.name;
         playersList.appendChild(entry);
     });
     
