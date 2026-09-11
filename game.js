@@ -930,7 +930,7 @@ class DotsAndBoxesGame {
             const [start, end] = this.parseLineKey(lineKey);
 
             const pulsating = this.pulsatingLines.find(p => p.line === lineKey);
-            const player = pulsating?.player || this.getLinePlayer(lineKey);
+            const player = pulsating?.player ?? this.getLinePlayer(lineKey);
 
             // Use populate color for player 3, otherwise use player 1 or 2 colors
             this.ctx.strokeStyle = player === DotsAndBoxesGame.POPULATE_PLAYER_ID ? this.populateColor : 

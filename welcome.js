@@ -562,10 +562,15 @@ function showToast(message, type = 'info', duration = 4000) {
     toast.className = `toast-notification toast-${type}`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'polite');
-    toast.innerHTML = `
-        <span class="toast-message">${message}</span>
-        <button class="toast-close" aria-label="Close notification">×</button>
-    `;
+    const toastMsg = document.createElement('span');
+    toastMsg.className = 'toast-message';
+    toastMsg.textContent = message;
+    const toastClose = document.createElement('button');
+    toastClose.className = 'toast-close';
+    toastClose.setAttribute('aria-label', 'Close notification');
+    toastClose.textContent = '×';
+    toast.appendChild(toastMsg);
+    toast.appendChild(toastClose);
     
     // Add to body
     document.body.appendChild(toast);
@@ -851,16 +856,24 @@ function updateLobbyUI() {
         if (player.isReady) entry.classList.add('ready');
         if (player.isHost) entry.classList.add('host');
         
-        entry.innerHTML = `
-            <div class="player-color-dot" style="background-color: ${player.color}"></div>
-            <span class="player-entry-name"></span>
-            ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
-            <span class="player-entry-status">${player.isReady ? '✓ Ready' : 'Not Ready'}</span>
-        `;
-        
-        // Render player name as text to prevent stored XSS from
-        // user-controlled input (joinRoom/updateMyName).
-        entry.querySelector('.player-entry-name').textContent = player.name;
+        const colorDot = document.createElement('div');
+        colorDot.className = 'player-color-dot';
+        colorDot.style.backgroundColor = player.color;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'player-entry-name';
+        nameSpan.textContent = player.name;
+        const hostBadge = player.isHost ? document.createElement('span') : null;
+        if (hostBadge) {
+            hostBadge.className = 'host-badge';
+            hostBadge.textContent = 'Host';
+        }
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'player-entry-status';
+        statusSpan.textContent = player.isReady ? '✓ Ready' : 'Not Ready';
+        entry.appendChild(colorDot);
+        entry.appendChild(nameSpan);
+        if (hostBadge) entry.appendChild(hostBadge);
+        entry.appendChild(statusSpan);
         playersList.appendChild(entry);
     });
     
