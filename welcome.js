@@ -848,7 +848,7 @@ function updateLobbyUI() {
     
     // Update players list
     const playersList = document.getElementById('playersList');
-    playersList.innerHTML = '';
+    playersList.replaceChildren();
     
     lobbyManager.players.forEach((player, index) => {
         const entry = document.createElement('div');
