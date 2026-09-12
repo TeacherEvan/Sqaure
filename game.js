@@ -763,20 +763,6 @@ class DotsAndBoxesGame {
         }
     }
 
-    updateSelectedDot(x, y) {
-        const dot = this.getNearestDot(x, y);
-        if (!dot) return;
-
-        const distance = Math.sqrt(
-            Math.pow(x - (this.offsetX + dot.col * this.cellSize), 2) +
-            Math.pow(y - (this.offsetY + dot.row * this.cellSize), 2)
-        );
-
-        if (distance <= this.cellSize * 0.5) {
-            this.selectedDot = dot;
-            this.draw();
-        }
-    }
 
     /**
      * Get a particle from the object pool or create new one
