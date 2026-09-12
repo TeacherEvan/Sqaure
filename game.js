@@ -1275,9 +1275,8 @@ class DotsAndBoxesGame {
         // Redraw only if needed
         if (needsRedraw) {
             this.draw();
+            requestAnimationFrame(() => this.animate());
         }
-
-        requestAnimationFrame(() => this.animate());
     }
 
     updateUI() {
@@ -1330,12 +1329,6 @@ class DotsAndBoxesGame {
         }
     }
 
-    isGameOver() {
-        const totalSquares = (this.gridRows - 1) * (this.gridCols - 1);
-        const completedSquares = Object.keys(this.squares).length;
-        return completedSquares === totalSquares;
-    }
-    
     /**
      * Get all possible lines (connections between adjacent dots)
      * @returns {Array} Array of line keys
