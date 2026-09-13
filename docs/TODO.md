@@ -24,15 +24,22 @@ is aspirational only).
 - **Target:** Track a `dirtyRect` (min/max x/y of changed region); `clearRect()` only
   that region instead of the full logical canvas; fall back to full clear when the
   grid dimensions change.
+- **Status:** ⚠️ PARTIAL — structurally present, functionally inert at runtime.
 - **Acceptance:**
-  - A `this.dirtyRect = null` field exists on the class.
-  - `setupCanvas()` calls `this.clearDirtyRect()` (full clear when `gridCols`/`gridRows`
-    changed, partial clear otherwise).
-  - `draw()` marks dirty regions after line/square/particle draws and calls
-    `this.clearDirtyRect()` before repainting.
-  - No visual regression: full canvas still renders correctly.
-- **Validation:** Manual visual check + `grep` for `dirtyRect` usage in both
-  `setupCanvas()` and `draw()`.
+  - A `this.dirtyRect = null` field exists on the class. ✅
+  - `setupCanvas()` calls `this.clearDirtyRect(true)` (full clear). ✅
+  - `draw()` calls `this.clearDirtyRect()` before repainting and accumulates the
+    region via `this.markDirty()`. ✅ (wired — no dead code)
+  - `markDirty()` is the single entry point for dirty-region tracking. ✅
+  - **GAP:** `draw()` repaints the *entire* board every frame (lines, squares,
+    particles, dots, kiss emojis, animations), so the accumulated dirty region is
+    always the full logical canvas. The partial-clear path is never exercised —
+    every frame does a full `clearRect(0,0,w,h)`. **No per-frame clearing savings
+    are realized.** The optimization is structurally correct but operationally a
+    no-op for the current draw pipeline.
+  - No visual regression: full canvas still renders correctly. ✅
+- **Validation:** `grep` for `dirtyRect`/markDirty usage in `setupCanvas()` and
+  `draw()`; `node --check game.js` passes.
 
 ### OBJ-002 — `requestIdleCallback` for non-critical handlers in `game.js`
 - **Requirement:** OPT-002

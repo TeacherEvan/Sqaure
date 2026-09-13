@@ -970,9 +970,11 @@ class DotsAndBoxesGame {
         // Falls back to a full clear when no dirty region is tracked.
         this.clearDirtyRect();
 
-        // Mark the full logical canvas as dirty — draw() always repaints
-        // the entire board, so the dirty region is the full canvas.
-        this.dirtyRect = { x: 0, y: 0, w: this.logicalWidth, h: this.logicalHeight };
+        // Accumulate the dirty region from everything drawn below.
+        // draw() repaints the full board each frame, so the accumulated
+        // region is the full logical canvas — markDirty() is the single
+        // entry point that keeps dirtyRect consistent with actual draws.
+        this.markDirty(0, 0, this.logicalWidth, this.logicalHeight);
 
         // Draw touch visuals (before other elements)
         this.drawTouchVisuals();
