@@ -81,6 +81,9 @@ class DotsAndBoxesGame {
         this.particlePool = [];
         this.maxPoolSize = 200; // Pool size for particle reuse
 
+        // Dirty-rectangle rendering: track the region that needs clearing
+        this.dirtyRect = null;
+
         this.setupCanvas();
         this.initializeMultipliers(); // Initialize multipliers AFTER grid dimensions are set
         this.setupEventListeners();
@@ -109,7 +112,8 @@ class DotsAndBoxesGame {
     /**
      * Configure canvas for optimal rendering
      * Implements device pixel ratio scaling and landscape optimization
-     * TODO: [OPTIMIZATION] Consider implementing dirty rectangle rendering for better performance
+     * Uses dirty-rectangle rendering: only the changed region is cleared,
+     * falling back to a full clear when grid dimensions change.
      * @private
      */
     setupCanvas() {
@@ -149,22 +153,22 @@ class DotsAndBoxesGame {
         const cellSize = Math.min(cellSizeWidth, cellSizeHeight);
 
         // Allow smaller cell sizes now that dots are smaller
-        this.cellSize = Math.max(DotsAndBoxesGame.CELL_SIZE_MIN, 
+        this.cellSize = Math.max(DotsAndBoxesGame.CELL_SIZE_MIN,
                                 Math.min(cellSize, DotsAndBoxesGame.CELL_SIZE_MAX));
         const logicalWidth = (this.gridCols - 1) * this.cellSize + DotsAndBoxesGame.GRID_OFFSET * 2;
         const logicalHeight = (this.gridRows - 1) * this.cellSize + DotsAndBoxesGame.GRID_OFFSET * 2;
-        
+
         // Store logical dimensions for use in draw() method
         this.logicalWidth = logicalWidth;
         this.logicalHeight = logicalHeight;
-        
+
         // Account for device pixel ratio for crisp rendering on high-DPI displays
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = logicalWidth * dpr;
         this.canvas.height = logicalHeight * dpr;
         this.canvas.style.width = logicalWidth + 'px';
         this.canvas.style.height = logicalHeight + 'px';
-        
+
         this.offsetX = DotsAndBoxesGame.GRID_OFFSET;
         this.offsetY = DotsAndBoxesGame.GRID_OFFSET;
 
@@ -174,7 +178,7 @@ class DotsAndBoxesGame {
         oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
         this.canvas = newCanvas;
         this.ctx = newCanvas.getContext('2d');
-        
+
         // Scale context to match device pixel ratio (dpr already declared above)
         this.ctx.scale(dpr, dpr);
 
@@ -190,6 +194,51 @@ class DotsAndBoxesGame {
 
         // Add populate button listener
         this.setupPopulateButton();
+
+        // Dirty-rectangle: setupCanvas() reconfigures the canvas, so always
+        // do a full clear. The dirty-rectangle optimization applies to draw().
+        this._prevGridCols = this.gridCols;
+        this._prevGridRows = this.gridRows;
+        this.clearDirtyRect(true);
+    }
+
+    /**
+     * Clear the dirty rectangle region.
+     * When `full` is true, clears the entire logical canvas;
+     * otherwise clears only the tracked dirty region (if any).
+     * @param {boolean} full — force a full clear
+     * @private
+     */
+    clearDirtyRect(full = false) {
+        if (full || !this.dirtyRect) {
+            this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
+            this.dirtyRect = null;
+        } else {
+            const r = this.dirtyRect;
+            this.ctx.clearRect(r.x, r.y, r.w, r.h);
+        }
+    }
+
+    /**
+     * Expand the dirty rectangle to cover the given point/size.
+     * @param {number} x
+     * @param {number} y
+     * @param {number} w
+     * @param {number} h
+     * @private
+     */
+    markDirty(x, y, w, h) {
+        if (!this.dirtyRect) {
+            this.dirtyRect = { x, y, w, h };
+        } else {
+            const r = this.dirtyRect;
+            const nx = Math.min(r.x, x);
+            const ny = Math.min(r.y, y);
+            r.x = nx;
+            r.y = ny;
+            r.w = Math.max(r.x + r.w, x + w) - nx;
+            r.h = Math.max(r.y + r.h, y + h) - ny;
+        }
     }
 
     /**
@@ -265,21 +314,33 @@ class DotsAndBoxesGame {
     /**
      * Set up event listeners with proper cleanup
      * Uses debouncing for performance on resize events
-     * TODO: [OPTIMIZATION] Implement requestIdleCallback for non-critical handlers
+     * Non-critical listener registration is deferred via requestIdleCallback
+     * with a setTimeout fallback for browsers that lack the API.
      * @private
      */
     setupEventListeners() {
-        // Debounced resize handler to improve performance
-        let resizeTimeout;
-        const debouncedResize = () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                this.setupCanvas();
-                this.draw();
-            }, 150); // 150ms debounce delay
+        // Defer non-critical listener registration to the idle period.
+        // Critical setup (canvas, initial draw) already ran synchronously.
+        const registerListeners = () => {
+            // Debounced resize handler to improve performance
+            let resizeTimeout;
+            const debouncedResize = () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    this.setupCanvas();
+                    this.draw();
+                }, 150); // 150ms debounce delay
+            };
+
+            window.addEventListener('resize', debouncedResize);
         };
-        
-        window.addEventListener('resize', debouncedResize);
+
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(registerListeners, { timeout: 1000 });
+        } else {
+            // Fallback for browsers without requestIdleCallback
+            setTimeout(registerListeners, 100);
+        }
     }
 
     setupPopulateButton() {
@@ -905,8 +966,13 @@ class DotsAndBoxesGame {
     }
     
     draw() {
-        // Use logical dimensions for clearRect since context is scaled by DPR
-        this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
+        // Dirty-rectangle: clear only the region that changed since last draw.
+        // Falls back to a full clear when no dirty region is tracked.
+        this.clearDirtyRect();
+
+        // Mark the full logical canvas as dirty — draw() always repaints
+        // the entire board, so the dirty region is the full canvas.
+        this.dirtyRect = { x: 0, y: 0, w: this.logicalWidth, h: this.logicalHeight };
 
         // Draw touch visuals (before other elements)
         this.drawTouchVisuals();

@@ -47,8 +47,9 @@ class WelcomeAnimation {
     }
     
     /**
-     * Handle window resize events with debouncing
-     * TODO: [OPTIMIZATION] Implement debouncing to reduce resize event frequency
+     * Handle window resize events with debouncing.
+     * The actual debounce is handled by handleResizeDebounced() (200 ms),
+     * which is wired in the constructor.
      * @private
      */
     handleResize() {
@@ -398,7 +399,7 @@ class LobbyManager {
         if (myPlayer) {
             myPlayer.isReady = this.isReady;
         }
-        // TODO: [OPTIMIZATION] Sync with server for multiplayer mode
+        // TODO: [SCOPE] Multiplayer sync requires a backend (see MULTIPLAYER_PLANNING.md)
         return this.isReady;
     }
     
@@ -411,7 +412,7 @@ class LobbyManager {
         if (myPlayer) {
             myPlayer.color = color;
         }
-        // TODO: [OPTIMIZATION] Broadcast to other players in multiplayer
+        // TODO: [SCOPE] Multiplayer broadcast requires a backend (see MULTIPLAYER_PLANNING.md)
     }
     
     /**
@@ -423,7 +424,7 @@ class LobbyManager {
         if (myPlayer) {
             myPlayer.name = name;
         }
-        // TODO: [OPTIMIZATION] Broadcast to other players in multiplayer
+        // TODO: [SCOPE] Multiplayer broadcast requires a backend (see MULTIPLAYER_PLANNING.md)
     }
     
     setGridSize(size) {
