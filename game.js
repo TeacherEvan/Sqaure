@@ -1004,25 +1004,8 @@ class DotsAndBoxesGame {
             this.ctx.stroke();
         }
 
-        // Draw completed squares
-        for (const [squareKey, player] of Object.entries(this.squares)) {
-            const { row, col } = this.parseSquareKey(squareKey);
-            const x = this.offsetX + col * this.cellSize;
-            const y = this.offsetY + row * this.cellSize;
-
-            this.ctx.fillStyle = player === 1 ? this.player1Color + '40' : this.player2Color + '40';
-            this.ctx.fillRect(x, y, this.cellSize, this.cellSize);
-
-            this.ctx.fillStyle = player === 1 ? this.player1Color : this.player2Color;
-            // Scale font size based on cell size
-            const fontSize = Math.max(8, Math.min(this.cellSize / 2, 20));
-            this.ctx.font = `bold ${fontSize}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(player.toString(), x + this.cellSize / 2, y + this.cellSize / 2);
-        }
-
-        // Draw completed squares with animations
+        // Draw completed squares (single rendering path — drawSquaresWithAnimations
+        // handles both animated and non-animated squares, so no separate loop here).
         this.drawSquaresWithAnimations();
 
         // Draw particles on top
