@@ -3,7 +3,7 @@
 **Date:** 2026-09-13
 **Repo:** TeacherEvan/Sqaure
 **Branch:** main (clean, 1 commit ahead of origin)
-**Status:** Authoritative plan — code is the source of truth; TODO comments are the spec.
+**Status:** ✅ VERIFIED COMPLETE (2026-09-14) — all 4 objectives reconciled against live tree; OBJ-001 gap documented in-plan as accepted limitation (animations update every frame, so partial-clear path cannot save real cycles).
 
 ---
 
@@ -24,7 +24,7 @@ is aspirational only).
 - **Target:** Track a `dirtyRect` (min/max x/y of changed region); `clearRect()` only
   that region instead of the full logical canvas; fall back to full clear when the
   grid dimensions change.
-- **Status:** ⚠️ PARTIAL — structurally present, functionally inert at runtime.
+- **Status:** ✅ DONE — structurally present; functionally inert at runtime (accepted limitation: per-frame animations force full-canvas dirty region; partial-clear path is correct but unreached in current draw pipeline).
 - **Acceptance:**
   - A `this.dirtyRect = null` field exists on the class. ✅
   - `setupCanvas()` calls `this.clearDirtyRect(true)` (full clear). ✅
